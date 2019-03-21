@@ -169,10 +169,6 @@ namespace UTJ
             GpuProgramCount
         }
 
-
-        [SerializeField]
-        public List<SubShaderInfo> subShaderInfos;
-
         [SerializeField]
         public string name;
 
@@ -181,6 +177,10 @@ namespace UTJ
 
         [SerializeField]
         public List<PropInfo> propInfos;
+
+        [SerializeField]
+        public List<SubShaderInfo> subShaderInfos;
+
 
 
         public ShaderDumpInfo(Shader shader)
