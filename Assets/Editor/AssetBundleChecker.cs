@@ -25,6 +25,7 @@ namespace UTJ
         private int toolBarMode = 0;
         private List<Shader> assetBundleShaders = new List<Shader>();
         private Dictionary<Shader, bool> assetBundleShaderFold = new Dictionary<Shader, bool>();
+        private Dictionary<Shader, ShaderInfoGUI> shaderInfoGUI = new Dictionary<Shader, ShaderInfoGUI>();
 
         private Vector2 scrollPos;
 
@@ -161,7 +162,7 @@ namespace UTJ
 
 //                    EditorGUILayout.BeginVertical(GUILayout.Width(this.position.width / 2));
                     EditorGUILayout.LabelField("AssetBundle");
-                    OnGUIShader(shader);
+                    shaderInfoGUI[shader].OnGUIShader();
 //                    EditorGUILayout.EndVertical();
 #if false
                     var projectShader = Shader.Find(shader.name);
@@ -345,6 +346,7 @@ namespace UTJ
             loadedObjects.Remove(ab);
             assetBundleShaders.Clear();
             assetBundleShaderFold.Clear();
+            shaderInfoGUI.Clear();
             ab.Unload(true);
             loadedAssetBundles.Remove(ab);
 
@@ -357,6 +359,7 @@ namespace UTJ
         {
             assetBundleShaders.Clear();
             assetBundleShaderFold.Clear();
+            shaderInfoGUI.Clear();
             foreach (var objs in instanciatedGameObjectPerAb.Values)
             {
                 foreach (var instanciatedGameObject in objs)
@@ -376,71 +379,6 @@ namespace UTJ
             loadedAssetBundles.Clear();
         }
 
-        private void OnGUIShader(Shader shader)
-        {
-            if (shader != null)
-            {
-                EditorGUI.indentLevel++;
-                bool hasShaderCode = HasShaderCode(shader);
-                EditorGUILayout.LabelField("isSupported:" + shader.isSupported);
-                EditorGUILayout.LabelField("shaderCode:" + hasShaderCode);
-                var shaderData = ShaderUtil.GetShaderData(shader);
-                EditorGUILayout.LabelField("SubShader Count:" + shaderData.SubshaderCount);
-
-                EditorGUILayout.LabelField("");
-                for (int i = 0; i < shaderData.SubshaderCount; ++i)
-                {
-                    var subShader = shaderData.GetSubshader(i);
-                    EditorGUILayout.LabelField("SubShader " + i + "(PassCount:" + subShader.PassCount + ")");
-                    EditorGUI.indentLevel++;
-                    for (int j = 0; j < subShader.PassCount; ++j)
-                    {
-                        var pass = subShader.GetPass(j);
-                        EditorGUILayout.LabelField("PassName \"" + pass.Name + "\"");
-                        EditorGUI.indentLevel++;
-
-                        if ( !hasShaderCode || string.IsNullOrEmpty(pass.SourceCode))
-                        {
-                            EditorGUILayout.LabelField("No SourceCode");
-                        }
-                        else
-                        {
-                            EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField("", GUILayout.Width(EditorGUI.indentLevel * 11.0f));
-                            if ( GUILayout.Button("CopySourceToClip"))
-                            {
-                                EditorGUIUtility.systemCopyBuffer = pass.SourceCode;
-                            }
-                            EditorGUILayout.EndHorizontal();
-                        }
-                        EditorGUI.indentLevel--;
-                    }
-                    EditorGUI.indentLevel--;
-                }
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("",GUILayout.Width( EditorGUI.indentLevel * 11.0f ) );
-                if( GUILayout.Button("Dump ShaderVaritansts"))
-                {
-                    var dumpInfo = new ShaderDumpInfo(shader);
-                    string jsonString = JsonUtility.ToJson(dumpInfo);
-                    string file = shader.name.Replace("/", "_") + ".json";
-                    System.IO.File.WriteAllText(file, jsonString);
-                    Debug.Log(jsonString);
-                    EditorUtility.DisplayDialog("Saved", "Dump saved \"" + file +"\"", "ok");
-                }
-                EditorGUILayout.EndHorizontal();
-                // Debug
-                /*
-                DoDrawDefaultInspector(new SerializedObject(shader));
-                if(GUILayout.Button("Debug"))
-                {
-                    DebugSerializedObject(new SerializedObject(shader));
-                }
-                */
-                EditorGUI.indentLevel--;
-            }
-        }
-
 
 
         internal static bool DebugSerializedObject(SerializedObject obj)
@@ -458,30 +396,13 @@ namespace UTJ
             return EditorGUI.EndChangeCheck();
         }
 
-
-
-
-
-        private static bool HasShaderCode(Shader shader)
-        {
-            return (CallShaderUtilBoolFunc(shader, "HasShaderSnippets") ||
-                 CallShaderUtilBoolFunc(shader, "HasSurfaceShaders") ||
-                  CallShaderUtilBoolFunc(shader, "HasFixedFunctionShaders"));
-
-        }
-
-        private static bool CallShaderUtilBoolFunc(Shader shader, string func)
-        {
-            var method = typeof(ShaderUtil).GetMethod(func, BindingFlags.Static | BindingFlags.NonPublic);
-            var obj = method.Invoke(null, new object[] { shader });
-            System.Boolean val = (System.Boolean)obj;
-            return val;
-        }
+        
 
 
         private void ConstructAssetBundleShaderList()
         {
             assetBundleShaderFold.Clear();
+            shaderInfoGUI.Clear();
             assetBundleShaders.Clear();
             foreach (var ab in this.loadedAssetBundles)
             {
@@ -528,6 +449,7 @@ namespace UTJ
             assetBundleShaders.Add(shader);
 
             assetBundleShaderFold.Add(shader, false);
+            shaderInfoGUI.Add(shader, new ShaderInfoGUI(shader));
         }
         // future...
         //  -> Execute on runtime( For Android/Windows)
