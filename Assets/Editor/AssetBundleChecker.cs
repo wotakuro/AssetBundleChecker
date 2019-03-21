@@ -158,20 +158,19 @@ namespace UTJ
                 if (assetBundleShaderFold[shader])
                 {
                     EditorGUILayout.ObjectField(shader, typeof(Shader), false);
-                    EditorGUILayout.BeginHorizontal();
 
-                    EditorGUILayout.BeginVertical(GUILayout.Width(this.position.width / 2));
+//                    EditorGUILayout.BeginVertical(GUILayout.Width(this.position.width / 2));
                     EditorGUILayout.LabelField("AssetBundle");
                     OnGUIShader(shader);
-                    EditorGUILayout.EndVertical();
-
+//                    EditorGUILayout.EndVertical();
+#if false
                     var projectShader = Shader.Find(shader.name);
                     EditorGUILayout.BeginVertical(GUILayout.Width(this.position.width / 2));
                     EditorGUILayout.LabelField("Project");
                     OnGUIShader(projectShader);
                     EditorGUILayout.EndVertical();
+#endif
 
-                    EditorGUILayout.EndHorizontal();
                 }
             }
         }
@@ -377,13 +376,14 @@ namespace UTJ
             loadedAssetBundles.Clear();
         }
 
-        private static void OnGUIShader(Shader shader)
+        private void OnGUIShader(Shader shader)
         {
             if (shader != null)
             {
                 EditorGUI.indentLevel++;
+                bool hasShaderCode = HasShaderCode(shader);
                 EditorGUILayout.LabelField("isSupported:" + shader.isSupported);
-                EditorGUILayout.LabelField("shaderCode:" + HasShaderCode(shader));
+                EditorGUILayout.LabelField("shaderCode:" + hasShaderCode);
                 var shaderData = ShaderUtil.GetShaderData(shader);
                 EditorGUILayout.LabelField("SubShader Count:" + shaderData.SubshaderCount);
 
@@ -399,21 +399,68 @@ namespace UTJ
                         EditorGUILayout.LabelField("PassName \"" + pass.Name + "\"");
                         EditorGUI.indentLevel++;
 
-                        if (string.IsNullOrEmpty(pass.SourceCode))
+                        if ( !hasShaderCode || string.IsNullOrEmpty(pass.SourceCode))
                         {
                             EditorGUILayout.LabelField("No SourceCode");
                         }
                         else
                         {
-                            EditorGUILayout.TextArea(pass.SourceCode, GUILayout.MaxHeight(200));
+                            EditorGUILayout.BeginHorizontal();
+                            EditorGUILayout.LabelField("", GUILayout.Width(EditorGUI.indentLevel * 11.0f));
+                            if ( GUILayout.Button("CopySourceToClip"))
+                            {
+                                EditorGUIUtility.systemCopyBuffer = pass.SourceCode;
+                            }
+                            EditorGUILayout.EndHorizontal();
                         }
                         EditorGUI.indentLevel--;
                     }
                     EditorGUI.indentLevel--;
                 }
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("",GUILayout.Width( EditorGUI.indentLevel * 11.0f ) );
+                if( GUILayout.Button("Dump ShaderVaritansts"))
+                {
+                    var dumpInfo = new ShaderDumpInfo(shader);
+                    string jsonString = JsonUtility.ToJson(dumpInfo);
+                    string file = shader.name.Replace("/", "_") + ".json";
+                    System.IO.File.WriteAllText(file, jsonString);
+                    Debug.Log(jsonString);
+                    EditorUtility.DisplayDialog("Saved", "Dump saved \"" + file +"\"", "ok");
+                }
+                EditorGUILayout.EndHorizontal();
+                // Debug
+                /*
+                DoDrawDefaultInspector(new SerializedObject(shader));
+                if(GUILayout.Button("Debug"))
+                {
+                    DebugSerializedObject(new SerializedObject(shader));
+                }
+                */
                 EditorGUI.indentLevel--;
             }
         }
+
+
+
+        internal static bool DebugSerializedObject(SerializedObject obj)
+        {
+            EditorGUI.BeginChangeCheck();
+            obj.Update();
+
+            // Loop through properties and create one field (including children) for each top level property.
+            SerializedProperty property = obj.GetIterator();
+            bool expanded = true;
+            while (property.NextVisible(expanded))
+            {
+                Debug.Log(property.propertyPath);
+            }
+            return EditorGUI.EndChangeCheck();
+        }
+
+
+
+
 
         private static bool HasShaderCode(Shader shader)
         {
