@@ -23,7 +23,6 @@ namespace UTJ
             EditorGUILayout.ObjectField(shader, typeof(Shader), false);
 
             bool hasShaderCode = HasShaderCode(shader);
-            EditorGUILayout.LabelField("InstanceId:" + shader.GetInstanceID() );
             EditorGUILayout.LabelField("isSupported:" + shader.isSupported);
             EditorGUILayout.LabelField("shaderCode:" + hasShaderCode);
             var shaderData = ShaderUtil.GetShaderData(shader);
