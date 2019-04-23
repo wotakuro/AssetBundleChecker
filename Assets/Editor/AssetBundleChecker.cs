@@ -22,10 +22,15 @@ namespace UTJ
             new GUIContent("Load AssetBundles"),
             new GUIContent("AssetBundle Shaders"),
         };
+
         private int toolBarMode = 0;
         private List<Shader> assetBundleShaders = new List<Shader>();
         private Dictionary<Shader, bool> assetBundleShaderFold = new Dictionary<Shader, bool>();
         private Dictionary<Shader, ShaderInfoGUI> shaderInfoGUI = new Dictionary<Shader, ShaderInfoGUI>();
+
+        private List<ShaderVariantCollection> assetBundleVariants = new List<ShaderVariantCollection>();
+        private Dictionary<ShaderVariantCollection, bool> assetBundleShaderVariantsFold = new Dictionary<ShaderVariantCollection, bool>();
+        private Dictionary<ShaderVariantCollection, ShaderVariantCollectionInfoGUI> shaderVariantInfoGUI = new Dictionary<ShaderVariantCollection, ShaderVariantCollectionInfoGUI>();
 
         private Vector2 scrollPos;
 
@@ -151,6 +156,17 @@ namespace UTJ
 
         private void OnGUIShaderDebug()
         {
+            EditorGUILayout.LabelField("ShaderVariantCollections");
+            // Shader Variant Debug
+            foreach ( var shaderVariants in this.assetBundleVariants)
+            {
+                assetBundleShaderVariantsFold[shaderVariants] = EditorGUILayout.Foldout(assetBundleShaderVariantsFold[shaderVariants], shaderVariants.name);
+                if (assetBundleShaderVariantsFold[shaderVariants])
+                {
+                    shaderVariantInfoGUI[shaderVariants].OnGUI();
+                }
+            }
+            EditorGUILayout.LabelField("Shaders");
             // Shader Debug
             foreach (var shader in this.assetBundleShaders)
             {
@@ -158,10 +174,6 @@ namespace UTJ
 
                 if (assetBundleShaderFold[shader])
                 {
-                    EditorGUILayout.ObjectField(shader, typeof(Shader), false);
-
-//                    EditorGUILayout.BeginVertical(GUILayout.Width(this.position.width / 2));
-                    EditorGUILayout.LabelField("AssetBundle");
                     shaderInfoGUI[shader].OnGUIShader();
 //                    EditorGUILayout.EndVertical();
 #if false
@@ -246,12 +258,7 @@ namespace UTJ
             advanceInfoFold[ab] = EditorGUILayout.Foldout(advanceInfoFold[ab], "Advanced");
             if (advanceInfoFold[ab])
             {
-                SerializedObject serializedObject = null;
-                if (!serializedObjectPerAb.TryGetValue(ab, out serializedObject))
-                {
-                    serializedObject = new SerializedObject(ab);
-                    serializedObjectPerAb.Add(ab, serializedObject);
-                }
+                SerializedObject serializedObject = GetSerializedObjectFromAssetBundle(ab);
                 EditorGUI.indentLevel++;
                 DoDrawDefaultInspector(serializedObject);
                 EditorGUI.indentLevel--;
@@ -328,7 +335,8 @@ namespace UTJ
             instanciatedGameObjectPerAb.Add(ab, instancedObjects);
 
             // 
-            this.AppendShaderListFromAb(ab);
+            AppendObjectFromAssetBundle<Shader>(ab, AddShader);
+            AppendObjectFromAssetBundle<ShaderVariantCollection>(ab, AddShaderVariants);
         }
 
         private void UnloadAssetBundle(AssetBundle ab)
@@ -347,6 +355,11 @@ namespace UTJ
             assetBundleShaders.Clear();
             assetBundleShaderFold.Clear();
             shaderInfoGUI.Clear();
+
+            assetBundleVariants.Clear();
+            assetBundleShaderVariantsFold.Clear();
+            shaderVariantInfoGUI.Clear();
+
             ab.Unload(true);
             loadedAssetBundles.Remove(ab);
 
@@ -358,8 +371,12 @@ namespace UTJ
         private void ClearAssetBundle()
         {
             assetBundleShaders.Clear();
+            assetBundleVariants.Clear();
             assetBundleShaderFold.Clear();
+
             shaderInfoGUI.Clear();
+            assetBundleShaderVariantsFold.Clear();
+            shaderVariantInfoGUI.Clear();
             foreach (var objs in instanciatedGameObjectPerAb.Values)
             {
                 foreach (var instanciatedGameObject in objs)
@@ -403,22 +420,23 @@ namespace UTJ
         {
             assetBundleShaderFold.Clear();
             shaderInfoGUI.Clear();
+            shaderVariantInfoGUI.Clear();
+
+            assetBundleShaderVariantsFold.Clear();
             assetBundleShaders.Clear();
+            assetBundleVariants.Clear();
+
             foreach (var ab in this.loadedAssetBundles)
             {
-                AppendShaderListFromAb(ab);
+                AppendObjectFromAssetBundle<Shader>(ab, AddShader);
+                AppendObjectFromAssetBundle<ShaderVariantCollection>(ab, AddShaderVariants);
             }
         }
 
-        private void AppendShaderListFromAb(AssetBundle ab)
+        private void AppendObjectFromAssetBundle<T>(AssetBundle ab,System.Action<T> func) where T:class
         {
 
-            SerializedObject serializedObject = null;
-            if (!serializedObjectPerAb.TryGetValue(ab, out serializedObject))
-            {
-                serializedObject = new SerializedObject(ab);
-                serializedObjectPerAb.Add(ab, serializedObject);
-            }
+            SerializedObject serializedObject = GetSerializedObjectFromAssetBundle(ab);
 
             var preloadTable = serializedObject.FindProperty("m_PreloadTable");
             var preloadInstancies = preloadTable.serializedObject.context;
@@ -426,9 +444,21 @@ namespace UTJ
             for (int i = 0; i < preloadTable.arraySize; ++i)
             {
                 var elementProp = preloadTable.GetArrayElementAtIndex(i);
-                var shader = elementProp.objectReferenceValue as Shader;
-                AddShader(shader);
+                var shader = elementProp.objectReferenceValue as T;
+                func(shader);
             }
+        }
+
+
+        private SerializedObject GetSerializedObjectFromAssetBundle( AssetBundle ab)
+        {
+            SerializedObject serializedObject = null;
+            if (!serializedObjectPerAb.TryGetValue(ab, out serializedObject))
+            {
+                serializedObject = new SerializedObject(ab);
+                serializedObjectPerAb.Add(ab, serializedObject);
+            }
+            return serializedObject;
         }
 
         private static string GetDependency(Shader shader, string name)
@@ -447,10 +477,18 @@ namespace UTJ
                 return;
             }
             assetBundleShaders.Add(shader);
-
             assetBundleShaderFold.Add(shader, false);
             shaderInfoGUI.Add(shader, new ShaderInfoGUI(shader));
         }
+
+        private void AddShaderVariants(ShaderVariantCollection variantCollection)
+        {
+            if(variantCollection == null) { return; }
+            assetBundleVariants.Add(variantCollection);
+            assetBundleShaderVariantsFold.Add(variantCollection, false);
+            shaderVariantInfoGUI.Add(variantCollection, new ShaderVariantCollectionInfoGUI(variantCollection));
+        }
+
         // future...
         //  -> Execute on runtime( For Android/Windows)
         //  -> LoadManifest file and dependencies auto resolved.

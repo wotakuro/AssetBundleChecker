@@ -15,68 +15,71 @@ namespace UTJ
         }
         public void OnGUIShader()
         {
-            if (shader != null)
+            if (shader == null)
             {
+                return;
+            }
+            EditorGUI.indentLevel++;
+            EditorGUILayout.ObjectField(shader, typeof(Shader), false);
+
+            bool hasShaderCode = HasShaderCode(shader);
+            EditorGUILayout.LabelField("InstanceId:" + shader.GetInstanceID() );
+            EditorGUILayout.LabelField("isSupported:" + shader.isSupported);
+            EditorGUILayout.LabelField("shaderCode:" + hasShaderCode);
+            var shaderData = ShaderUtil.GetShaderData(shader);
+            EditorGUILayout.LabelField("SubShader Count:" + shaderData.SubshaderCount);
+
+            EditorGUILayout.LabelField("");
+            for (int i = 0; i < shaderData.SubshaderCount; ++i)
+            {
+                var subShader = shaderData.GetSubshader(i);
+                EditorGUILayout.LabelField("SubShader " + i + "(PassCount:" + subShader.PassCount + ")");
                 EditorGUI.indentLevel++;
-                bool hasShaderCode = HasShaderCode(shader);
-                EditorGUILayout.LabelField("isSupported:" + shader.isSupported);
-                EditorGUILayout.LabelField("shaderCode:" + hasShaderCode);
-                var shaderData = ShaderUtil.GetShaderData(shader);
-                EditorGUILayout.LabelField("SubShader Count:" + shaderData.SubshaderCount);
-
-                EditorGUILayout.LabelField("");
-                for (int i = 0; i < shaderData.SubshaderCount; ++i)
+                for (int j = 0; j < subShader.PassCount; ++j)
                 {
-                    var subShader = shaderData.GetSubshader(i);
-                    EditorGUILayout.LabelField("SubShader " + i + "(PassCount:" + subShader.PassCount + ")");
+                    var pass = subShader.GetPass(j);
+                    EditorGUILayout.LabelField("PassName \"" + pass.Name + "\"");
                     EditorGUI.indentLevel++;
-                    for (int j = 0; j < subShader.PassCount; ++j)
-                    {
-                        var pass = subShader.GetPass(j);
-                        EditorGUILayout.LabelField("PassName \"" + pass.Name + "\"");
-                        EditorGUI.indentLevel++;
 
-                        if (!hasShaderCode || string.IsNullOrEmpty(pass.SourceCode))
+                    if (!hasShaderCode || string.IsNullOrEmpty(pass.SourceCode))
+                    {
+                        EditorGUILayout.LabelField("No SourceCode");
+                    }
+                    else
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField("", GUILayout.Width(EditorGUI.indentLevel * 11.0f));
+                        if (GUILayout.Button("CopySourceToClip"))
                         {
-                            EditorGUILayout.LabelField("No SourceCode");
+                            EditorGUIUtility.systemCopyBuffer = pass.SourceCode;
                         }
-                        else
-                        {
-                            EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField("", GUILayout.Width(EditorGUI.indentLevel * 11.0f));
-                            if (GUILayout.Button("CopySourceToClip"))
-                            {
-                                EditorGUIUtility.systemCopyBuffer = pass.SourceCode;
-                            }
-                            EditorGUILayout.EndHorizontal();
-                        }
-                        EditorGUI.indentLevel--;
+                        EditorGUILayout.EndHorizontal();
                     }
                     EditorGUI.indentLevel--;
                 }
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("", GUILayout.Width(EditorGUI.indentLevel * 11.0f));
-                if (GUILayout.Button("Dump ShaderVaritansts"))
-                {
-                    var dumpInfo = new ShaderDumpInfo(shader);
-                    string jsonString = JsonUtility.ToJson(dumpInfo);
-                    string file = shader.name.Replace("/", "_") + ".json";
-                    System.IO.File.WriteAllText(file, jsonString);
-                    Debug.Log(jsonString);
-                    EditorUtility.DisplayDialog("Saved", "Dump saved \"" + file + "\"", "ok");
-                }
-                EditorGUILayout.EndHorizontal();
-                // Debug
-                /*
-                DoDrawDefaultInspector(new SerializedObject(shader));
-                if(GUILayout.Button("Debug"))
-                {
-                    DebugSerializedObject(new SerializedObject(shader));
-                }
-                */
                 EditorGUI.indentLevel--;
             }
-
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("", GUILayout.Width(EditorGUI.indentLevel * 11.0f));
+            if (GUILayout.Button("Dump ShaderVaritansts"))
+            {
+                var dumpInfo = new ShaderDumpInfo(shader);
+                string jsonString = JsonUtility.ToJson(dumpInfo);
+                string file = shader.name.Replace("/", "_") + ".json";
+                System.IO.File.WriteAllText(file, jsonString);
+                Debug.Log(jsonString);
+                EditorUtility.DisplayDialog("Saved", "Dump saved \"" + file + "\"", "ok");
+            }
+            EditorGUILayout.EndHorizontal();
+            // Debug
+            /*
+            DoDrawDefaultInspector(new SerializedObject(shader));
+            if(GUILayout.Button("Debug"))
+            {
+                DebugSerializedObject(new SerializedObject(shader));
+            }
+            */
+            EditorGUI.indentLevel--;
         }
 
         private static bool HasShaderCode(Shader shader)
