@@ -45,17 +45,82 @@ namespace UTJ
                 }
             }
         }
+
+        [Serializable]
+        public class ShaderState
+        {
+            [SerializeField]
+            public string name;
+            [SerializeField]
+            public List<ShaderTagInfo> tags;
+            public ShaderState(SerializedProperty serializedProperty)
+            {
+                this.name = serializedProperty.FindPropertyRelative("m_Name").stringValue;
+                var tagsProp = serializedProperty.FindPropertyRelative("m_Tags.tags");
+
+
+                Debug.Log("tagsProp.arraySize::" + tagsProp.arraySize);
+
+                tags = new List<ShaderTagInfo>( tagsProp.arraySize );
+
+                for ( int i = 0; i< tagsProp.arraySize; ++i)
+                {
+                    var tagInfo = new ShaderTagInfo( tagsProp.GetArrayElementAtIndex(i) );
+                    tags.Add(tagInfo);
+                }
+                while (serializedProperty.Next(true))
+                {
+//                    Debug.Log(serializedProperty.propertyPath);
+                }
+            }
+        }
+
+        [Serializable]
+        public class ShaderTagInfo
+        {
+            [SerializeField]
+            public string key;
+            [SerializeField]
+            public string value;
+
+            public ShaderTagInfo(SerializedProperty serializedProperty)
+            {
+                var firstProp = serializedProperty.FindPropertyRelative("first");
+                var secondProp = serializedProperty.FindPropertyRelative("second");
+
+                this.key = firstProp.stringValue;
+                this.value = secondProp.stringValue;
+
+//                Debug.Log("tag::" + firstProp.stringValue + ":" + secondProp.stringValue);
+
+            }
+        }
+
         [Serializable]
         public class PassInfo
         {
+            [SerializeField]
+            public string useName;
+            [SerializeField]
+            public string name;
+
+            [SerializeField]
+            public ShaderState state;
+
+            [SerializeField]
+            public List<ShaderTagInfo> tags;
             [SerializeField]
             public List<GpuProgramInfo> vertInfos;
             [SerializeField]
             public List<GpuProgramInfo> fragmentInfos;
 
+
             private Dictionary<int, string> keywordDictionary;
             public PassInfo(SerializedProperty serializedProperty)
             {
+                SetupShaderStage(serializedProperty);
+                SetupTags(serializedProperty);
+                SetupNameInfo(serializedProperty);
                 SetupKeywordDictionary(serializedProperty);
 
                 var progVertex = serializedProperty.FindPropertyRelative("progVertex.m_SubPrograms");
@@ -76,8 +141,32 @@ namespace UTJ
                     gpuProgram.ResolveKeywordName(keywordDictionary);
                     fragmentInfos.Add(gpuProgram);
                 }
-
             }
+            private void SetupShaderStage(SerializedProperty serializedProperty)
+            {
+                var stateProp = serializedProperty.FindPropertyRelative("m_State");
+                this.state = new ShaderState(stateProp);
+            }
+
+            private void SetupTags(SerializedProperty serializedProperty)
+            {
+                var tagsProp = serializedProperty.FindPropertyRelative("m_Tags.tags");
+
+                tags = new List<ShaderTagInfo>(tagsProp.arraySize);
+                for ( int i = 0; i < tagsProp.arraySize; ++i)
+                {
+                    var tagInfo = new ShaderTagInfo( serializedProperty.GetArrayElementAtIndex(i) );
+                    tags.Add(tagInfo);
+                }
+            }
+
+
+            private  void SetupNameInfo(SerializedProperty serializedProperty)
+            {
+                useName = serializedProperty.FindPropertyRelative("m_UseName").stringValue;
+                name = serializedProperty.FindPropertyRelative("m_Name").stringValue;
+            }
+
             private void SetupKeywordDictionary (SerializedProperty serializedProperty)
             {
                 keywordDictionary = new Dictionary<int, string>();
