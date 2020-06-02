@@ -107,7 +107,7 @@ namespace UTJ
             }
         }
 
-        [MenuItem("Tools/AssetBundleChecker")]
+        [MenuItem("Tools/UTJ/AssetBundleChecker")]
         public static void Create()
         {
             EditorWindow.GetWindow<AssetBundleChecker>();
