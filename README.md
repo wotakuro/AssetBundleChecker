@@ -9,7 +9,7 @@
 # 使用方法
 ## 呼び出しについて
 「Tools/UTJ/AssetBundleChecker」で下記ウィンドウを出します。<br />
-![Alt text](/Documentation~/LoadAssetBundleMenu.png) <br />
+![Alt text](/Documentation~/AssetBundleChecker.png) <br />
 1.アセットバンドルのファイルを指定して読み込むボタンです。<br />
 　読み込んだ時にPrefabがあればInstanciateしてSceneViewに出します<br />
 2.読み込んだアセットバンドルをクリアします<br />
