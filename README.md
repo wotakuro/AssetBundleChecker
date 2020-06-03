@@ -26,7 +26,9 @@ Load AssetBundlesタブを選ぶと、下記のように読み込んだAssetBund
 ![Alt text](/Documentation~/AssetBundleShader.png) <br />
 
 AssetBunle Shadersにすると、AssetBundle中のShaderをリストに出します<br />
-Shaderを開いて 「Dump Shader」を押すと、プロジェクトの直下に シェーダーの情報をjsonにして書き出します。
+Shaderを開いて 「Dump Shader」を押すと、プロジェクトの直下に シェーダーの情報をjsonにして書き出します。<br />
+<br />
+![Alt text](/Documentation~/AssetBundleShaderJson.png) <br />
 
 # TODO…
 UI ElementsにしてUIの一新。<br />
