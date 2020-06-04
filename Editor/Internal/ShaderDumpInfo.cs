@@ -24,6 +24,11 @@ namespace UTJ
                 this.gpuProgramType = ((ShaderGpuProgramType)gpuProgramTypeProp.intValue).ToString();
 
                 var keywords = serializedProperty.FindPropertyRelative("m_KeywordIndices");
+
+                if (keywords == null)
+                {
+                    keywords = serializedProperty.FindPropertyRelative("m_GlobalKeywordIndices");
+                }
                 keywordIndecies = new List<int>(keywords.arraySize);
                 for (int i = 0; i < keywords.arraySize; ++i)
                 {
