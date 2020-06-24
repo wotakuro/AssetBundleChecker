@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <uie:Toolbar name="Header" style="flex-direction: row;">
+        <uie:ToolbarToggle label="Assets" name="Assets" />
+        <uie:ToolbarToggle label="Shaders" name="EditorShaders" />
+    </uie:Toolbar>
+    <ui:ScrollView name="Body" />
+</ui:UXML>

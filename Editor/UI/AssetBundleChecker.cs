@@ -11,7 +11,7 @@ namespace UTJ
     {
         private List<AssetBundle> loadedAssetBundles = new List<AssetBundle>();
         private Dictionary<AssetBundle, List<UnityEngine.Object>> loadedObjects = new Dictionary<AssetBundle, List<Object>>();
-        private Dictionary<AssetBundle, List<InstanciatedGameObject>> instanciatedGameObjectPerAb = new Dictionary<AssetBundle, List<InstanciatedGameObject>>();
+        private Dictionary<AssetBundle, List<InstanciateGameObjectFromAb>> instanciatedGameObjectPerAb = new Dictionary<AssetBundle, List<InstanciateGameObjectFromAb>>();
         private Dictionary<AssetBundle, bool> assetBundleFold = new Dictionary<AssetBundle, bool>();
         private Dictionary<AssetBundle, bool> advanceInfoFold = new Dictionary<AssetBundle, bool>();
 
@@ -34,78 +34,6 @@ namespace UTJ
 
         private Vector2 scrollPos;
 
-
-        private class InstanciatedGameObject
-        {
-            public GameObject gameObject;
-            private List<Renderer> allRenderers;
-            private Dictionary<Renderer, Material[]> abOriginMaterials;
-            private Dictionary<Renderer, Material[]> projShaderMaterials;
-
-
-            public bool IsProjectShader { get; private set; }
-
-            public InstanciatedGameObject(GameObject gmo)
-            {
-                gameObject = gmo;
-                allRenderers = new List<Renderer>(gmo.GetComponentsInChildren<Renderer>(true));
-                abOriginMaterials = new Dictionary<Renderer, Material[]>(allRenderers.Count);
-                projShaderMaterials = new Dictionary<Renderer, Material[]>(allRenderers.Count);
-
-                foreach (var renderer in allRenderers)
-                {
-                    var materials = renderer.sharedMaterials;
-                    abOriginMaterials.Add(renderer, materials);
-                    var projectMaterials = CreateProjectShaderMaterials(materials);
-
-                    projShaderMaterials.Add(renderer, projectMaterials);
-                }
-                IsProjectShader = false;
-            }
-
-            private Material[] CreateProjectShaderMaterials(Material[] materials)
-            {
-                if (materials == null) { return null; }
-                Material[] newMaterials = new Material[materials.Length];
-
-                for (int i = 0; i < materials.Length; ++i)
-                {
-                    var originMaterial = materials[i];
-                    if (originMaterial == null || originMaterial.shader == null)
-                    {
-                        newMaterials[i] = null;
-                        continue;
-                    }
-                    newMaterials[i] = new Material(originMaterial);
-                    newMaterials[i].shader = Shader.Find(originMaterial.shader.name);
-                }
-
-                return newMaterials;
-            }
-
-            public void SetAbOrigin()
-            {
-                SetMaterials(abOriginMaterials);
-                IsProjectShader = false;
-            }
-            public void SetProjectOrigin()
-            {
-                SetMaterials(projShaderMaterials);
-                IsProjectShader = true;
-            }
-            private void SetMaterials(Dictionary<Renderer, Material[]> setData)
-            {
-                foreach (var renderer in allRenderers)
-                {
-                    renderer.materials = setData[renderer];
-                }
-            }
-
-            public void Destroy()
-            {
-                Object.DestroyImmediate(gameObject);
-            }
-        }
 
         [MenuItem("Tools/UTJ/AssetBundleChecker")]
         public static void Create()
@@ -325,12 +253,11 @@ namespace UTJ
 
             // prefabs
             var prefabs = ab.LoadAllAssets<GameObject>();
-            List<InstanciatedGameObject> instancedObjects = new List<InstanciatedGameObject>(prefabs.Length);
+            List<InstanciateGameObjectFromAb> instancedObjects = new List<InstanciateGameObjectFromAb>(prefabs.Length);
 
             foreach (var prefab in prefabs)
             {
-                var gmo = GameObject.Instantiate(prefab);
-                instancedObjects.Add(new InstanciatedGameObject(gmo));
+                instancedObjects.Add(new InstanciateGameObjectFromAb(prefab));
             }
             instanciatedGameObjectPerAb.Add(ab, instancedObjects);
 
