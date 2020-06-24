@@ -8,7 +8,8 @@ namespace UTJ
 {
     internal class InstanciateGameObjectUI:System.IDisposable
     {
-        InstanciateGameObjectFromAb instanciateGameObject;
+        private InstanciateGameObjectFromAb instanciateGameObject;
+        private Button flipShaderButton;
 
         internal InstanciateGameObjectUI(InstanciateGameObjectFromAb inst)
         {
@@ -21,14 +22,27 @@ namespace UTJ
             element.style.flexDirection = FlexDirection.Row;
 
             Label label = new Label(instanciateGameObject.gameObject.name);
-            Button btn = new Button();
-            btn.text = "aa";
-
+            flipShaderButton = new Button();
+            flipShaderButton.text = "AssetBundle Shader";
+            flipShaderButton.clickable.clicked += FlipAbProjectShader;
 
             element.Add(label);
-            element.Add(btn);
-
+            element.Add(flipShaderButton);
             parent.Add(element);
+        }
+
+        void FlipAbProjectShader()
+        {
+            if( this.instanciateGameObject.IsProjectShader)
+            {
+                this.instanciateGameObject.SetAbOrigin();
+                flipShaderButton.text = "AssetBundle Shader";
+            }
+            else
+            {
+                this.instanciateGameObject.SetProjectOrigin();
+                flipShaderButton.text = "Project Shader";
+            }
         }
 
         public void Dispose()

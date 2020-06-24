@@ -362,7 +362,6 @@ namespace UTJ
 
         private void AppendObjectFromAssetBundle<T>(AssetBundle ab,System.Action<T> func) where T:class
         {
-
             SerializedObject serializedObject = GetSerializedObjectFromAssetBundle(ab);
 
             var preloadTable = serializedObject.FindProperty("m_PreloadTable");

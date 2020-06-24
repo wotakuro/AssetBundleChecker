@@ -2,7 +2,7 @@
 using System;
 using UnityEngine;
 using UnityEditor;
-
+using System.Collections;
 
 namespace UTJ
 {
@@ -228,6 +228,7 @@ namespace UTJ
             }
         }
 
+        private const int Cycle = 50;
         public enum ShaderGpuProgramType : int
         {
             GpuProgramUnknown = 0,
@@ -275,40 +276,60 @@ namespace UTJ
         [SerializeField]
         public List<SubShaderInfo> subShaderInfos;
 
+        private SerializedObject serializedObject;
+        private IEnumerator executeProgress;
 
-
-        public ShaderDumpInfo(Shader shader)
+        public ShaderDumpInfo(Shader sh)
         {
-            var obj = new SerializedObject(shader);
+            this.serializedObject = new SerializedObject(sh);
+            executeProgress = Execute();
+        }
+
+
+        public bool MoveNext()
+        {
+            return executeProgress.MoveNext();
+        }
+
+        private IEnumerator Execute() { 
 
             //EditorGUI.BeginChangeCheck();
-            obj.Update();
+            serializedObject.Update();
 
             // name
-            SerializedProperty nameProp = obj.FindProperty("m_ParsedForm.m_Name");
+            SerializedProperty nameProp = serializedObject.FindProperty("m_ParsedForm.m_Name");
             this.name = nameProp.stringValue;
             //fallback
-            SerializedProperty fallbackProp = obj.FindProperty("m_ParsedForm.m_FallbackName");
+            SerializedProperty fallbackProp = serializedObject.FindProperty("m_ParsedForm.m_FallbackName");
             this.fallback = fallbackProp.stringValue;
+            yield return null;
 
             // props
-            SerializedProperty propsproperty = obj.FindProperty( "m_ParsedForm.m_PropInfo.m_Props");
+            SerializedProperty propsproperty = serializedObject.FindProperty( "m_ParsedForm.m_PropInfo.m_Props");
             propInfos = new List<PropInfo>(propsproperty.arraySize);
             for ( int i = 0; i < propsproperty.arraySize; ++i)
             {
                 var prop = propsproperty.GetArrayElementAtIndex(i);
                 var propInfo = new PropInfo(prop);
                 propInfos.Add(propInfo);
+                if (i % Cycle == Cycle - 1)
+                {
+                    yield return null;
+                }
             }
-
+            yield return null;
             // subShaders
-            SerializedProperty subShadersProp = obj.FindProperty("m_ParsedForm.m_SubShaders");
+            SerializedProperty subShadersProp = serializedObject.FindProperty("m_ParsedForm.m_SubShaders");
             subShaderInfos = new List<SubShaderInfo>(subShadersProp.arraySize);
             for (int i = 0; i < subShadersProp.arraySize; ++i)
             {
                 var currentSubShaderProp = subShadersProp.GetArrayElementAtIndex(i);
                 var info = new SubShaderInfo(currentSubShaderProp);
                 this.subShaderInfos.Add(info);
+                if( i % Cycle == Cycle-1)
+                {
+                    yield return null;
+                }
             }
         }
     }

@@ -63,6 +63,7 @@ namespace UTJ
             if (GUILayout.Button("Dump ShaderVaritansts"))
             {
                 var dumpInfo = new ShaderDumpInfo(shader);
+                while(dumpInfo.MoveNext()) { }
                 string jsonString = JsonUtility.ToJson(dumpInfo);
                 string file = shader.name.Replace("/", "_") + ".json";
                 System.IO.File.WriteAllText(file, jsonString);

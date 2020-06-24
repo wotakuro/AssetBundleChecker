@@ -24,6 +24,7 @@ namespace UTJ
         public AssetBundleItemUI( AssetBundle bundle, VisualTreeAsset tree, OnDeleteAsset onDelete)
         {
             this.assetBundle = bundle;
+            this.serializedObject = new SerializedObject(this.assetBundle);
             this.element = tree.CloneTree();
             this.onDeleteAsset = onDelete;
             var allObjects = this.assetBundle.LoadAllAssets<UnityEngine.Object>();
@@ -79,10 +80,6 @@ namespace UTJ
             {
                 return;
             }
-            if( this.serializedObject == null)
-            {
-                this.serializedObject = new SerializedObject(this.assetBundle);
-            }
             DoDrawDefaultInspector(this.serializedObject);
         }
 
@@ -119,10 +116,40 @@ namespace UTJ
             parent.Insert(idx, this.element);
         }
 
+        public void CollectAbObjectToList<T>(List<T> items) where T :class
+        {
+            var preloadTable = serializedObject.FindProperty("m_PreloadTable");
+            var preloadInstancies = preloadTable.serializedObject.context;
+
+            for (int i = 0; i < preloadTable.arraySize; ++i)
+            {
+                var elementProp = preloadTable.GetArrayElementAtIndex(i);
+                var item = elementProp.objectReferenceValue as T;
+                if (item != null && !items.Contains(item))
+                {
+                    items.Add(item);
+                }
+            }
+            foreach( var abItem in this.assetBundleObjects)
+            {
+                var item = abItem as T;
+                if (item != null && !items.Contains(item))
+                {
+                    items.Add(item);
+                }
+            }
+        }
+
         public void RemoveFormParent()
         {
             if( this.element.parent == null) { return; }
             this.element.parent.Remove(this.element);
+        }
+
+        public void DisposeFromOnDisable()
+        {
+            this.onDeleteAsset = null; 
+            this.Dispose();
         }
 
         public void Dispose()

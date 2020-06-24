@@ -1,7 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <uie:Toolbar name="Header" style="flex-direction: row;">
-        <uie:ToolbarToggle label="Assets" name="Assets" />
-        <uie:ToolbarToggle label="Shaders" name="EditorShaders" />
+        <uie:ToolbarButton text="Assets" name="Assets" />
+        <uie:ToolbarButton text="Shaders" name="Shaders" />
+        <uie:ToolbarButton text="ShaderVariants" name="ShaderVariants" />
     </uie:Toolbar>
-    <ui:ScrollView name="Body" />
+    <ui:ScrollView name="AssetBundleItemBody" />
+    <ui:ScrollView name="ShaderItemBody" />
+    <ui:ScrollView name="VariantsItemBody" />
 </ui:UXML>
