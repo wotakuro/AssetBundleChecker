@@ -71,14 +71,6 @@ namespace UTJ
                 EditorUtility.DisplayDialog("Saved", "Dump saved \"" + file + "\"", "ok");
             }
             EditorGUILayout.EndHorizontal();
-            // Debug
-            /*
-            DoDrawDefaultInspector(new SerializedObject(shader));
-            if(GUILayout.Button("Debug"))
-            {
-                DebugSerializedObject(new SerializedObject(shader));
-            }
-            */
             EditorGUI.indentLevel--;
         }
 

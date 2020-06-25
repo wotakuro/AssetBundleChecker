@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEditor.UIElements;
 using System.Runtime.Remoting.Messaging;
+using System.Linq.Expressions;
 
 namespace UTJ
 {
@@ -19,15 +20,19 @@ namespace UTJ
         }
 
         private VisualTreeAsset assetBundleTreeAsset;
+        private VisualTreeAsset shaderTreeAsset;
+
+        private List<AssetBundleItemUI> loadAbItemUIs = new List<AssetBundleItemUI>();
+        private Dictionary<AssetBundleItemUI, List<ShaderItemUI>> loadShaderItems = new Dictionary<AssetBundleItemUI, List<ShaderItemUI>>();
+        private Dictionary<AssetBundleItemUI, List<ShaderVariantInfoUI>> loadVariantItems = new Dictionary<AssetBundleItemUI, List<ShaderVariantInfoUI>>();
+
+        private VisualElement bodyElement;
         private ScrollView assetBunleItemBody;
         private ScrollView shaderItemBody;
         private ScrollView shaderVariantsItemBody;
-        private List<AssetBundleItemUI> loadAbItemUIs = new List<AssetBundleItemUI>();
-        private List<ShaderItemUI> loadShaderItems = new List<ShaderItemUI>();
 
         private Button loadAbButton;
 
-        private Toolbar headerToolbar;
 
         private void OnEnable()
         {
@@ -39,9 +44,13 @@ namespace UTJ
 
 
             this.InitHeader();
+
+            this.bodyElement = this.rootVisualElement.Q<VisualElement>("BodyItems");
             this.InitAssetBundleItems();
             this.InitShaderItems();
             this.InitShaderVariants();
+
+            this.SetAssetFileMode();
         }
         private void OnDisable()
         {
@@ -57,50 +66,71 @@ namespace UTJ
 
         private void InitHeader()
         {
-            this.headerToolbar = this.rootVisualElement.Q<Toolbar>("Header");
+            this.loadAbButton = this.rootVisualElement.Q<Button>("LoadAssetBundle");
+            loadAbButton.clickable.clicked += SelectAssetBundleFile;
+
+
+            var headerToolbar = this.rootVisualElement.Q<VisualElement>("Header");
             headerToolbar.Q<ToolbarButton>("Assets").clickable.clicked += SetAssetFileMode;
             headerToolbar.Q<ToolbarButton>("Shaders").clickable.clicked += SetShaderMode;
             headerToolbar.Q<ToolbarButton>("ShaderVariants").clickable.clicked += SetShaderVariantMode;
         }
         private void SetAssetFileMode()
         {
-            assetBunleItemBody.visible = true;
-            shaderItemBody.visible = false;
-            shaderVariantsItemBody.visible = false;
+            SetVisibility(assetBunleItemBody, true);
+            SetVisibility(shaderItemBody, false);
+            SetVisibility(shaderVariantsItemBody, false);
         }
         private void SetShaderMode()
         {
-            assetBunleItemBody.visible = false;
-            shaderItemBody.visible = true;
-            shaderVariantsItemBody.visible = false;
+            SetVisibility(assetBunleItemBody, false);
+            SetVisibility(shaderItemBody, true);
+            SetVisibility(shaderVariantsItemBody, false);
         }
         private void SetShaderVariantMode()
         {
-            assetBunleItemBody.visible = false;
-            shaderItemBody.visible = false;
-            shaderVariantsItemBody.visible = true;
+            SetVisibility(assetBunleItemBody, false);
+            SetVisibility(shaderItemBody, false);
+            SetVisibility(shaderVariantsItemBody, true);
         }
 
+        private void SetVisibility(ScrollView itemBody,bool flag)
+        {
+            if (flag)
+            {
+                if (!bodyElement.Contains(itemBody))
+                {
+                    bodyElement.Add(itemBody);
+                }
+            }
+            else
+            {
+                if (bodyElement.Contains(itemBody))
+                {
+                    bodyElement.Remove(itemBody);
+                }
+            }
+        }
 
         private void InitAssetBundleItems()
         {
             string assetBuntleItemFile = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/AssetBundleFileItem.uxml";
             this.assetBundleTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetBuntleItemFile);
 
-            this.assetBunleItemBody = this.rootVisualElement.Q<ScrollView>("AssetBundleItemBody");
-            this.loadAbButton = new Button();
-            assetBunleItemBody.Add(loadAbButton);
-            loadAbButton.text = "Load AssetBundle";
-            loadAbButton.clickable.clicked += SelectAssetBundleFile;
+            this.assetBunleItemBody = new ScrollView();
+            assetBunleItemBody.style.overflow = Overflow.Hidden;
         }
         private void InitShaderItems()
         {
-            this.shaderItemBody = this.rootVisualElement.Q<ScrollView>("ShaderItemBody");
-
+            string shaderItem = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/ShaderItem.uxml";
+            this.shaderItemBody = new ScrollView();
+            shaderItemBody.style.overflow = Overflow.Hidden;
+            this.shaderTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(shaderItem);
         }
         private void InitShaderVariants()
         {
-            shaderVariantsItemBody = this.rootVisualElement.Q<ScrollView>("VariantsItemBody");
+            this.shaderVariantsItemBody = new ScrollView();
+            shaderVariantsItemBody.style.overflow = Overflow.Hidden;
         }
 
         private void SelectAssetBundleFile()
@@ -110,12 +140,31 @@ namespace UTJ
             AssetBundle assetBundle = AssetBundle.LoadFromFile(file);
             if( assetBundle == null) { return; }
             var assetBundleItem = new AssetBundleItemUI(assetBundle, this.assetBundleTreeAsset,this.OnDeleteAssetBundleItem);
-            assetBundleItem.InsertBefore(this.loadAbButton);
+            assetBundleItem.AddToElement(this.assetBunleItemBody);
             loadAbItemUIs.Add(assetBundleItem);
 
             // Shaderリスト
             List<Shader> shaders = new List<Shader>();
             assetBundleItem.CollectAbObjectToList(shaders);
+            List<ShaderItemUI> shaderItems = new List<ShaderItemUI>();
+            foreach( var shader in shaders)
+            {
+                var shaderItem = new ShaderItemUI(shader, shaderTreeAsset);
+                shaderItem.AddToElement(this.shaderItemBody);
+                shaderItems.Add(shaderItem);
+            }
+            loadShaderItems.Add(assetBundleItem, shaderItems);
+            // shaderVariantCollectionリスト
+            List<ShaderVariantCollection> variantCollections = new List<ShaderVariantCollection>();
+            assetBundleItem.CollectAbObjectToList(variantCollections);
+            List<ShaderVariantInfoUI> variantItems = new List<ShaderVariantInfoUI>();
+            foreach (var variantCollection in variantCollections)
+            {
+                var variantItem = new ShaderVariantInfoUI(variantCollection);
+                variantItem.AddToElement(this.shaderVariantsItemBody);
+                variantItems.Add(variantItem);
+            }
+            this.loadVariantItems.Add(assetBundleItem, variantItems);
         }
 
 
@@ -124,6 +173,30 @@ namespace UTJ
             if(loadAbItemUIs != null)
             {
                 loadAbItemUIs.Remove(item);
+            }
+            if (loadShaderItems != null)
+            {
+                List<ShaderItemUI> shaderItems;
+                if(loadShaderItems.TryGetValue(item,out shaderItems))
+                {
+                    foreach( var shaderItem in shaderItems)
+                    {
+                        shaderItem.Remove();
+                    }
+                    loadShaderItems.Remove(item);
+                }
+            }
+            if (loadVariantItems != null)
+            {
+                List<ShaderVariantInfoUI> variantItems;
+                if (loadVariantItems.TryGetValue(item, out variantItems))
+                {
+                    foreach (var variantItem in variantItems)
+                    {
+                        variantItem.Remove();
+                    }
+                    loadVariantItems.Remove(item);
+                }
             }
         }
         private static VisualElement CloneTree(VisualTreeAsset asset)

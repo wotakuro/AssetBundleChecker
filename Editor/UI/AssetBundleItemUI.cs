@@ -104,16 +104,9 @@ namespace UTJ
             return EditorGUI.EndChangeCheck();
         }
 
-        public void InsertBefore(VisualElement target)
+        public void AddToElement(VisualElement parent)
         {
-            var parent = target.parent;
-            int idx = 0;
-            foreach( var child in parent.Children() )
-            {
-                if( child == target) { break; }
-                idx++;
-            }
-            parent.Insert(idx, this.element);
+            parent.Add(this.element);
         }
 
         public void CollectAbObjectToList<T>(List<T> items) where T :class

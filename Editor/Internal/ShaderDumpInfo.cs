@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace UTJ
 {
-
+    
     public class ShaderDumpInfo 
     {
         [Serializable]
@@ -63,19 +63,12 @@ namespace UTJ
                 this.name = serializedProperty.FindPropertyRelative("m_Name").stringValue;
                 var tagsProp = serializedProperty.FindPropertyRelative("m_Tags.tags");
 
-
-                Debug.Log("tagsProp.arraySize::" + tagsProp.arraySize);
-
                 tags = new List<ShaderTagInfo>( tagsProp.arraySize );
 
                 for ( int i = 0; i< tagsProp.arraySize; ++i)
                 {
                     var tagInfo = new ShaderTagInfo( tagsProp.GetArrayElementAtIndex(i) );
                     tags.Add(tagInfo);
-                }
-                while (serializedProperty.Next(true))
-                {
-//                    Debug.Log(serializedProperty.propertyPath);
                 }
             }
         }
@@ -119,9 +112,22 @@ namespace UTJ
             [SerializeField]
             public List<GpuProgramInfo> fragmentInfos;
 
-
+            private SerializedProperty serializedProperty;
+            private IEnumerator execute;
             private Dictionary<int, string> keywordDictionary;
-            public PassInfo(SerializedProperty serializedProperty)
+
+
+            public PassInfo(SerializedProperty prop) {
+                this.serializedProperty = prop;
+                this.execute = Execute();
+            }
+
+            public bool MoveNext()
+            {
+                return execute.MoveNext();
+            }
+
+            public IEnumerator Execute()
             {
                 SetupShaderStage(serializedProperty);
                 SetupTags(serializedProperty);
@@ -146,6 +152,7 @@ namespace UTJ
                     gpuProgram.ResolveKeywordName(keywordDictionary);
                     fragmentInfos.Add(gpuProgram);
                 }
+                yield return null;
             }
             private void SetupShaderStage(SerializedProperty serializedProperty)
             {
@@ -198,16 +205,31 @@ namespace UTJ
         {
             [SerializeField]
             public List<PassInfo> passes;
-            public SubShaderInfo(SerializedProperty serializedProperty)
+
+            private SerializedProperty serializedProperty;
+            private IEnumerator execute;
+
+            public SubShaderInfo(SerializedProperty prop)
             {
+                this.serializedProperty = prop;
+                this.execute = Execute();
+            }
+            public bool MoveNext()
+            {
+                return this.execute.MoveNext();
+            }
+
+            private IEnumerator Execute() { 
                 var passesProp = serializedProperty.FindPropertyRelative("m_Passes");
                 passes = new List<PassInfo>(passesProp.arraySize);
-                for (int j = 0; j < passesProp.arraySize; ++j)
+                for (int i = 0; i < passesProp.arraySize; ++i)
                 {
-                    var currentPassProp = passesProp.GetArrayElementAtIndex(j);
+                    var currentPassProp = passesProp.GetArrayElementAtIndex(i);
                     var passInfo = new PassInfo(currentPassProp);
+                    while (passInfo.MoveNext()) { }
                     passes.Add(passInfo);
                 }
+                yield return null;
 
             }
         }
@@ -228,7 +250,7 @@ namespace UTJ
             }
         }
 
-        private const int Cycle = 50;
+        private const int PropSycle = 50;
         public enum ShaderGpuProgramType : int
         {
             GpuProgramUnknown = 0,
@@ -278,6 +300,7 @@ namespace UTJ
 
         private SerializedObject serializedObject;
         private IEnumerator executeProgress;
+        public bool IsComplete { get; set; } = false;
 
         public ShaderDumpInfo(Shader sh)
         {
@@ -312,10 +335,6 @@ namespace UTJ
                 var prop = propsproperty.GetArrayElementAtIndex(i);
                 var propInfo = new PropInfo(prop);
                 propInfos.Add(propInfo);
-                if (i % Cycle == Cycle - 1)
-                {
-                    yield return null;
-                }
             }
             yield return null;
             // subShaders
@@ -325,12 +344,10 @@ namespace UTJ
             {
                 var currentSubShaderProp = subShadersProp.GetArrayElementAtIndex(i);
                 var info = new SubShaderInfo(currentSubShaderProp);
+                while (info.MoveNext()) { }
                 this.subShaderInfos.Add(info);
-                if( i % Cycle == Cycle-1)
-                {
-                    yield return null;
-                }
             }
+            this.IsComplete = true;
         }
     }
 

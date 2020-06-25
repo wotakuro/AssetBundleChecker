@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace UTJ
@@ -10,17 +11,24 @@ namespace UTJ
     {
         private VisualElement element;
 
+        private ShaderDumpInfo shaderDumpInfo;
+
+        private Shader shader;
+
         public ShaderItemUI (Shader sh,VisualTreeAsset treeAsset)
         {
-
+            this.shader = sh;
             var shaderData = ShaderUtil.GetShaderData(sh);
             element = treeAsset.CloneTree();
 
             element.Q<Foldout>("ShaderFold").text = sh.name;
+            // shader value
+            element.Q<ObjectField>("ShaderVal").objectType = typeof(Shader);
+            element.Q<ObjectField>("ShaderVal").value = sh;
 
-            var subShaderFoldout = element.Q<Foldout>("SubShaders");
-            subShaderFoldout.text = "SubShaders " + shaderData.SubshaderCount;
-            subShaderFoldout.value = false;
+            var shaderSubShadersFold = element.Q<Foldout>("SubShaders");
+            shaderSubShadersFold.text = "SubShaders " + shaderData.SubshaderCount;
+            shaderSubShadersFold.value = false;
 
             for (int i = 0; i < shaderData.SubshaderCount; ++i)
             {
@@ -28,8 +36,23 @@ namespace UTJ
                 var subShader = shaderData.GetSubshader(i);
 
                 CreateSubShaderMenu(subShaderFold,i, subShader);
+                shaderSubShadersFold.Add(subShaderFold);
             }
+            // DumpBtn
+
+
+            element.Q<Button>("DumpButton").clickable.clicked += () =>
+            {
+                DumpShader();
+                EditorUtility.DisplayDialog("DumpComplete", "Dump", "ok");
+            };
         }
+
+        public void AddToElement(VisualElement parent)
+        {
+            parent.Add(this.element);
+        }
+
         private void CreateSubShaderMenu(Foldout subShaderFold,int idx,ShaderData.Subshader subShader)
         {
             subShaderFold.text = "SubShader " + idx + " PassNum:" + subShader.PassCount;
@@ -40,6 +63,21 @@ namespace UTJ
                 var label = new Label("PassName:" + pass.Name);
                 subShaderFold.Add(label);
             }
+        }
+
+        public void Remove()
+        {
+            this.element.parent.Remove(this.element);
+        }
+        public void DumpShader()
+        {
+            this.shaderDumpInfo = new ShaderDumpInfo(this.shader);
+            while( this.shaderDumpInfo.MoveNext()) { 
+            }
+            string jsonString = JsonUtility.ToJson(shaderDumpInfo);
+            string file = shader.name.Replace("/", "_") + ".json";
+            System.IO.File.WriteAllText(file, jsonString);
+
         }
     }
 }
