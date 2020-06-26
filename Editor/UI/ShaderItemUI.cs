@@ -27,6 +27,7 @@ namespace UTJ
             element = treeAsset.CloneTree();
 
             element.Q<Foldout>("ShaderFold").text = sh.name;
+            element.Q<Foldout>("ShaderFold").value = false;
             // shader value
             element.Q<ObjectField>("ShaderVal").objectType = typeof(Shader);
             element.Q<ObjectField>("ShaderVal").value = sh;

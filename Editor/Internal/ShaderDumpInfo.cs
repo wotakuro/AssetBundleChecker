@@ -3,7 +3,6 @@ using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
-using ICSharpCode.NRefactory.Ast;
 using System.Text;
 
 namespace UTJ

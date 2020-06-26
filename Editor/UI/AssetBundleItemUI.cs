@@ -29,9 +29,23 @@ namespace UTJ
             this.serializedObject = new SerializedObject(this.assetBundle);
             this.element = tree.CloneTree();
             this.onDeleteAsset = onDelete;
-            var allObjects = this.assetBundle.LoadAllAssets<UnityEngine.Object>();
-            this.assetBundleObjects = new List<UnityEngine.Object>(allObjects);
+            if (!IsStreamSceneAsset(this.serializedObject))
+            {
+                var allObjects = this.assetBundle.LoadAllAssets<UnityEngine.Object>();
+                this.assetBundleObjects = new List<UnityEngine.Object>(allObjects);
+            }
+            else
+            {
+                this.assetBundleObjects = new List<UnityEngine.Object>();
+            }
             this.InitElement();
+        }
+
+        private bool IsStreamSceneAsset(SerializedObject obj)
+        {
+            var prop = obj.FindProperty("m_IsStreamedSceneAssetBundle") ;
+            if( prop == null) { Debug.LogError("m_IsStreamedSceneAssetBundle is null"); }
+            return prop.boolValue;
         }
 
         public bool Validate()
@@ -41,7 +55,11 @@ namespace UTJ
 
         private void InitElement()
         {
-            this.element.Q<Foldout>("AssetBundleItem").text =  this.assetBundle.name;
+            if (!string.IsNullOrEmpty(this.assetBundle.name))
+            {
+                this.element.Q<Foldout>("AssetBundleItem").text = this.assetBundle.name;
+            }
+            this.element.Q<Foldout>("AssetBundleItem").value = false;
             var loadObjectBody = this.element.Q<VisualElement>("LoadObjectBody");
             foreach( var abObject in assetBundleObjects)
             {

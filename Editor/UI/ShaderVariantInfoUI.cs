@@ -48,6 +48,7 @@ namespace UTJ
                 shaderObject.objectType = typeof(Shader);
                 shaderObject.value = shader;
                 shaderFold.Add(shaderObject);
+                shaderFold.value = false;
 
 
                 ShaderVariants variants = null;
@@ -55,6 +56,7 @@ namespace UTJ
                     Foldout keywordsFold = new Foldout();
                     keywordsFold.text = "keywords(" + variants.keywordNames.Count + ")";
                     keywordsFold.style.left = 20;
+                    keywordsFold.value = false;
                     foreach ( var keyword in variants.keywordNames)
                     {
                         string str = keyword;
