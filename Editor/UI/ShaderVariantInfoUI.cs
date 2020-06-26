@@ -49,13 +49,20 @@ namespace UTJ
                 shaderObject.value = shader;
                 shaderFold.Add(shaderObject);
 
+
                 ShaderVariants variants = null;
                 if(this.shaderVariants.TryGetValue(shader,out variants)){
-                    foreach( var keyword in variants.keywordNames)
+                    Foldout keywordsFold = new Foldout();
+                    keywordsFold.text = "keywords(" + variants.keywordNames.Count + ")";
+                    keywordsFold.style.left = 20;
+                    foreach ( var keyword in variants.keywordNames)
                     {
-                        var keywordLabel = new Label(keyword);
-                        shaderFold.Add(keywordLabel);
+                        string str = keyword;
+                        if(str == "") { str = "<none>"; }
+                        var keywordLabel = new Label(str);
+                        keywordsFold.Add(keywordLabel);
                     }
+                    shaderFold.Add(keywordsFold);
                 }
                 mainFold.Add(shaderFold);
             }

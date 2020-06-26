@@ -4,20 +4,25 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
+using System.IO;
 
 namespace UTJ
 {
     public class ShaderItemUI
     {
         private VisualElement element;
+        private DumpProgressUI dumpProgress;
 
-        private ShaderDumpInfo shaderDumpInfo;
-
+        private ShaderDumpInfo shaderDumpInfo;        
         private Shader shader;
+        private string dateTimeStr;
 
-        public ShaderItemUI (Shader sh,VisualTreeAsset treeAsset)
+        private const string SaveDIR = "ShaderVariants/AssetBundles";
+
+        public ShaderItemUI (Shader sh,VisualTreeAsset treeAsset,string date)
         {
             this.shader = sh;
+            this.dateTimeStr = date;
             var shaderData = ShaderUtil.GetShaderData(sh);
             element = treeAsset.CloneTree();
 
@@ -27,7 +32,7 @@ namespace UTJ
             element.Q<ObjectField>("ShaderVal").value = sh;
 
             var shaderSubShadersFold = element.Q<Foldout>("SubShaders");
-            shaderSubShadersFold.text = "SubShaders " + shaderData.SubshaderCount;
+            shaderSubShadersFold.text = "SubShaders(" + shaderData.SubshaderCount + ")";
             shaderSubShadersFold.value = false;
 
             for (int i = 0; i < shaderData.SubshaderCount; ++i)
@@ -64,29 +69,81 @@ namespace UTJ
 
         public void Remove()
         {
+            this.shaderDumpInfo = null;
             this.element.parent.Remove(this.element);
         }
 
+        public bool IsDumpComplete()
+        {
+            if (shaderDumpInfo == null) { return false; }
+            return shaderDumpInfo.IsComplete;
+        }
 
         public void DumpStart()
         {
             if(shaderDumpInfo != null) { return; }
             this.shaderDumpInfo = new ShaderDumpInfo(this.shader);
+
+            var dumpBtn = this.element.Q<Button>("DumpButton");
+            // add progress
+            dumpProgress = new DumpProgressUI();
+            dumpProgress.style.width = 200;
+            dumpBtn.parent.Add(dumpProgress);
+            // 
+            dumpBtn.parent.Remove(dumpBtn);
             EditorApplication.update += Update;
-
-
         }
 
         private void Update() {
+            if(shaderDumpInfo == null)
+            {
+                EditorApplication.update -= this.Update;
+                return;
+            }
             shaderDumpInfo.SetYieldCheckTime();
             if (!shaderDumpInfo.MoveNext())
             {
-                string jsonString = JsonUtility.ToJson(shaderDumpInfo);
-                string file = shader.name.Replace("/", "_") + ".json";
-                System.IO.File.WriteAllText(file, jsonString);
-                EditorApplication.update -= this.Update;
-                EditorUtility.DisplayDialog("DumpComplete", "Dump", "ok");
+                OnDumpComplete();
             }
+            else
+            {
+                dumpProgress.value = shaderDumpInfo.Progress * 100.0f;
+                dumpProgress.text = shaderDumpInfo.ProgressStr;
+            }
+        }
+
+        private void OnDumpComplete()
+        {
+            string dir = SaveDIR + '/' + this.dateTimeStr;
+
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            var parent = dumpProgress.parent;
+            parent.Remove(dumpProgress);
+            CreateKeywordList(parent);
+
+            string jsonString = JsonUtility.ToJson(this.shaderDumpInfo);
+            string file = Path.Combine(dir,shader.name.Replace("/", "_") + ".json");
+            System.IO.File.WriteAllText(file, jsonString);
+            EditorApplication.update -= this.Update;
+        }
+
+        private void CreateKeywordList( VisualElement parent)
+        {
+            var keywords = shaderDumpInfo.CollectKeywords();
+            var keywordFold = new Foldout();
+            keywordFold.text = "Keywords(" + keywords.Count + ")";
+            keywordFold.style.left = 20;
+            keywordFold.value = false;
+            foreach (var keyword in keywords)
+            {
+                Label keywordLabel = new Label(keyword);
+                keywordFold.Add(keywordLabel);
+            }
+            parent.Add(keywordFold);
         }
 
     }

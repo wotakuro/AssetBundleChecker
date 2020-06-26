@@ -3,6 +3,8 @@ using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
+using ICSharpCode.NRefactory.Ast;
+using System.Text;
 
 namespace UTJ
 {
@@ -18,6 +20,10 @@ namespace UTJ
             public List<int> keywordIndecies;
             [SerializeField]
             public List<string> keywords;
+
+            [NonSerialized]
+            public string ConbinedKeyword;
+
             public GpuProgramInfo(SerializedProperty serializedProperty)
             {
                 var gpuProgramTypeProp = serializedProperty.FindPropertyRelative("m_GpuProgramType");
@@ -36,17 +42,44 @@ namespace UTJ
                     keywordIndecies.Add(keywordIndex);
                 }
             }
-            public void ResolveKeywordName(Dictionary<int,string> dictionary)
+            public void ResolveKeywordName(Dictionary<int, string> dictionary)
             {
                 keywords = new List<string>(keywordIndecies.Count);
-                for( int i = 0; i < keywordIndecies.Count; ++i)
+                for (int i = 0; i < keywordIndecies.Count; ++i)
                 {
                     int index = keywordIndecies[i];
                     string val = null;
-                    if( dictionary.TryGetValue(index,out val))
+                    if (dictionary.TryGetValue(index, out val))
                     {
-                        keywords.Add(val); 
+                        keywords.Add(val);
                     }
+                }
+
+                this.ResolvedConbinedKeyword();
+            }
+
+
+            private void ResolvedConbinedKeyword()
+            {
+                var sortedKeywords = new List<string>(keywords);
+                sortedKeywords.Sort();
+                int length = 0;
+                foreach(var word in sortedKeywords)
+                {
+                    length += word.Length + 1;
+                }
+                StringBuilder builder = new StringBuilder(length);
+                foreach (var word in sortedKeywords)
+                {
+                    builder.Append(word).Append(' ');
+                }
+                if (builder.Length <= 1)
+                {
+                    this.ConbinedKeyword = "<none>";
+                }
+                else
+                {
+                    this.ConbinedKeyword = builder.ToString();
                 }
             }
         }
@@ -142,26 +175,26 @@ namespace UTJ
                 vertInfos = new List<GpuProgramInfo>(vertNum);
                 fragmentInfos = new List<GpuProgramInfo>(fragNum);
                 yieldChk.SetVertexNum(vertNum);
+                yieldChk.SetFragmentNum(fragNum);
                 for (int i = 0; i < vertNum; ++i)
                 {
                     var gpuProgram = new GpuProgramInfo(progVertex.GetArrayElementAtIndex(i));
                     gpuProgram.ResolveKeywordName(keywordDictionary);
                     vertInfos.Add(gpuProgram);
                     // yield
-                    yieldChk.SetVertexIdx(i);
+                    yieldChk.CompleteVertIdx(i);
                     if (yieldChk.ShouldYield())
                     {
                         yield return null;
                     }
                 }
-                yieldChk.SetFragmentNum(fragNum);
                 for (int i = 0; i < fragNum; ++i)
                 {
                     var gpuProgram = new GpuProgramInfo(progFragment.GetArrayElementAtIndex(i));
                     gpuProgram.ResolveKeywordName(keywordDictionary);
                     fragmentInfos.Add(gpuProgram);
                     // yield
-                    yieldChk.SetFragmentIdx(i);
+                    yieldChk.CompleteFragIdx(i);
                     if (yieldChk.ShouldYield())
                     {
                         yield return null;
@@ -251,7 +284,7 @@ namespace UTJ
                     }
                     passes.Add(passInfo);
                     // yield
-                    yieldChk.SetPassIdx(i);
+                    yieldChk.CompletePassIdx(i);
                     if (yieldChk.ShouldYield()){
                         yield return null;
                     }
@@ -277,7 +310,6 @@ namespace UTJ
             }
         }
 
-        private const int PropSycle = 50;
         public enum ShaderGpuProgramType : int
         {
             GpuProgramUnknown = 0,
@@ -328,6 +360,24 @@ namespace UTJ
         private SerializedObject serializedObject;
         private IEnumerator executeProgress;
         public bool IsComplete { get; set; } = false;
+        public float Progress
+        {
+            get
+            {
+                if( this.yieldChk == null) { return 0.0f; }
+                return this.yieldChk.Progress;
+            }
+        }
+        public string ProgressStr
+        {
+            get
+            {
+                if (this.yieldChk == null) { return ""; }
+                return this.yieldChk.CurrentState;
+            }
+
+        }
+
 
         private DumpYieldCheck yieldChk = new DumpYieldCheck();
 
@@ -337,6 +387,28 @@ namespace UTJ
             executeProgress = Execute();
         }
 
+
+        public List<string> CollectKeywords()
+        {
+            HashSet<string> hashedKeywords = new HashSet<string>();
+            foreach( var subshader in this.subShaderInfos)
+            {
+                foreach( var pass in subshader.passes)
+                {
+                    foreach (var gpuProgram in pass.fragmentInfos)
+                    {
+                        hashedKeywords.Add(gpuProgram.ConbinedKeyword);
+                    }
+                    foreach (var gpuProgram in pass.vertInfos)
+                    {
+                        hashedKeywords.Add(gpuProgram.ConbinedKeyword);
+                    }
+                }
+            }
+            var retList = new List<string>(hashedKeywords);
+            retList.Sort();
+            return retList;
+        }
 
         public bool MoveNext()
         {
@@ -385,7 +457,7 @@ namespace UTJ
                 }
                 this.subShaderInfos.Add(info);
                 // yield chk
-                yieldChk.SetSubShaderIdx(i);
+                yieldChk.CompleteSubShaderIdx(i);
                 if (yieldChk.ShouldYield())
                 {
                     yield return null;

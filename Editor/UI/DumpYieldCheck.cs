@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Graphs;
 using UnityEngine;
@@ -21,18 +22,50 @@ namespace UTJ
         public float Progress {
             get
             {
-                float subShader = (subShaderIdx+1) / (float)subShaderCount;
-                return subShader;
+                float subShaderProgress = 0.0f, passProgress = 0.0f, vertProgress=0.0f, fragProgress=0.0f;
+
+
+                if (subShaderCount <= 0)
+                {
+                    return 0.0f;
+                }
+                subShaderProgress = (subShaderIdx + 1) / (float)subShaderCount;
+
+                if (passCount <= 0)
+                {
+                    return subShaderProgress;
+                }
+                passProgress = (this.passIdx + 1) / (float)this.passCount;
+                passProgress *= 1 / (float)subShaderCount;
+
+                if (vertCount > 0 )
+                {
+                    vertProgress = (this.vertIdx +1 )/ (float)this.vertCount;
+                    vertProgress *= (1 / (float)subShaderCount) * (1 / (float)passCount) * 0.5f;
+                }
+                if (fragCount > 0)
+                {
+                    fragProgress = (this.fragIdx +1) / (float)this.fragCount;
+                    fragProgress *= (1 / (float)subShaderCount) * (1 / (float)passCount) * 0.5f;
+                }
+
+                return Mathf.Min(1.0f,subShaderProgress + passProgress + vertProgress + fragProgress);
             }
         }
         public string CurrentState
         {
             get
             {
-                return "";
+                stringBuilder.Length = 0;
+                stringBuilder.Append("Sub:").Append(subShaderIdx+1).Append('/').Append(subShaderCount);
+                stringBuilder.Append(" Pass:").Append(passIdx + 1).Append('/').Append(passCount);
+                stringBuilder.Append(" Vert:").Append(vertIdx + 1).Append('/').Append(vertCount);
+                stringBuilder.Append(" Frag:").Append(fragIdx + 1).Append('/').Append(fragCount);
+                return stringBuilder.ToString();
             }
         }
 
+        private StringBuilder stringBuilder = new StringBuilder(32);
         private double startTime;
 
         private int subShaderCount;
@@ -46,7 +79,7 @@ namespace UTJ
 
 
 
-        public void SetSubShaderIdx(int idx)
+        public void CompleteSubShaderIdx(int idx)
         {
             subShaderIdx = idx;
         }
@@ -54,33 +87,40 @@ namespace UTJ
         public void SetSubshaderCount(int subCnt)
         {
             subShaderCount = subCnt;
+            subShaderIdx = -1;
+            SetPassCount(0);
         }
 
-        public void SetPassIdx(int idx)
+        public void CompletePassIdx(int idx)
         {
             passIdx = idx;
         }
         public void SetPassCount(int passCnt)
         {
             passCount = passCnt;
+            passIdx = -1;
+            SetVertexNum(0);
+            SetFragmentNum(0);
         }
 
-        public void SetVertexIdx(int idx)
+        public void CompleteVertIdx(int idx)
         {
             vertIdx = idx;
         }
         public void SetVertexNum(int cnt)
         {
             vertCount = cnt;
+            vertIdx = -1;
         }
 
-        public void SetFragmentIdx(int idx)
+        public void CompleteFragIdx(int idx)
         {
             fragIdx = idx;
         }
         public void SetFragmentNum(int cnt)
         {
             fragCount = cnt;
+            fragIdx = -1;
         }
 
         public void SetYieldCheckTime()

@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEditor.VersionControl;
 
 namespace UTJ
 {
@@ -21,15 +22,21 @@ namespace UTJ
         private SerializedObject serializedObject;
         private OnDeleteAsset onDeleteAsset;
 
-        public AssetBundleItemUI( AssetBundle bundle, VisualTreeAsset tree, OnDeleteAsset onDelete)
+        public AssetBundleItemUI(string abFilePath, VisualTreeAsset tree, OnDeleteAsset onDelete)
         {
-            this.assetBundle = bundle;
+            this.assetBundle =AssetBundle.LoadFromFile(abFilePath);
+            if(this.assetBundle == null) { return; }
             this.serializedObject = new SerializedObject(this.assetBundle);
             this.element = tree.CloneTree();
             this.onDeleteAsset = onDelete;
             var allObjects = this.assetBundle.LoadAllAssets<UnityEngine.Object>();
             this.assetBundleObjects = new List<UnityEngine.Object>(allObjects);
             this.InitElement();
+        }
+
+        public bool Validate()
+        {
+            return (this.assetBundle != null);
         }
 
         private void InitElement()
@@ -106,7 +113,10 @@ namespace UTJ
 
         public void AddToElement(VisualElement parent)
         {
-            parent.Add(this.element);
+            if (this.element != null)
+            {
+                parent.Add(this.element);
+            }
         }
 
         public void CollectAbObjectToList<T>(List<T> items) where T :class

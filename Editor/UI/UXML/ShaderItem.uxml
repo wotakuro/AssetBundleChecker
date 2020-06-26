@@ -3,7 +3,7 @@
         <ui:VisualElement>
             <uie:ObjectField label="Shader" name="ShaderVal" />
             <ui:Foldout text="SubShaders" name="SubShaders" style="left: 20px;" />
-            <ui:Button text="Dump" name="DumpButton" />
+            <ui:Button text="Dump" name="DumpButton" style="width: 100px;" />
         </ui:VisualElement>
     </ui:Foldout>
 </ui:UXML>
