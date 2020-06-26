@@ -39,12 +39,9 @@ namespace UTJ
                 shaderSubShadersFold.Add(subShaderFold);
             }
             // DumpBtn
-
-
             element.Q<Button>("DumpButton").clickable.clicked += () =>
             {
-                DumpShader();
-                EditorUtility.DisplayDialog("DumpComplete", "Dump", "ok");
+                DumpStart();
             };
         }
 
@@ -69,15 +66,28 @@ namespace UTJ
         {
             this.element.parent.Remove(this.element);
         }
-        public void DumpShader()
+
+
+        public void DumpStart()
         {
+            if(shaderDumpInfo != null) { return; }
             this.shaderDumpInfo = new ShaderDumpInfo(this.shader);
-            while( this.shaderDumpInfo.MoveNext()) { 
-            }
-            string jsonString = JsonUtility.ToJson(shaderDumpInfo);
-            string file = shader.name.Replace("/", "_") + ".json";
-            System.IO.File.WriteAllText(file, jsonString);
+            EditorApplication.update += Update;
+
 
         }
+
+        private void Update() {
+            shaderDumpInfo.SetYieldCheckTime();
+            if (!shaderDumpInfo.MoveNext())
+            {
+                string jsonString = JsonUtility.ToJson(shaderDumpInfo);
+                string file = shader.name.Replace("/", "_") + ".json";
+                System.IO.File.WriteAllText(file, jsonString);
+                EditorApplication.update -= this.Update;
+                EditorUtility.DisplayDialog("DumpComplete", "Dump", "ok");
+            }
+        }
+
     }
 }

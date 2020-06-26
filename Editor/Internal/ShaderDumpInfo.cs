@@ -115,10 +115,11 @@ namespace UTJ
             private SerializedProperty serializedProperty;
             private IEnumerator execute;
             private Dictionary<int, string> keywordDictionary;
+            private DumpYieldCheck yieldChk;
 
-
-            public PassInfo(SerializedProperty prop) {
+            public PassInfo(SerializedProperty prop, DumpYieldCheck yieldCheck) {
                 this.serializedProperty = prop;
+                this.yieldChk = yieldCheck;
                 this.execute = Execute();
             }
 
@@ -136,21 +137,36 @@ namespace UTJ
 
                 var progVertex = serializedProperty.FindPropertyRelative("progVertex.m_SubPrograms");
                 var progFragment = serializedProperty.FindPropertyRelative("progFragment.m_SubPrograms");
-
-                vertInfos = new List<GpuProgramInfo>(progVertex.arraySize);
-                fragmentInfos = new List<GpuProgramInfo>(progFragment.arraySize);
-
-                for (int i = 0; i < progVertex.arraySize; ++i)
+                int vertNum = progVertex.arraySize;
+                int fragNum = progFragment.arraySize;
+                vertInfos = new List<GpuProgramInfo>(vertNum);
+                fragmentInfos = new List<GpuProgramInfo>(fragNum);
+                yieldChk.SetVertexNum(vertNum);
+                for (int i = 0; i < vertNum; ++i)
                 {
                     var gpuProgram = new GpuProgramInfo(progVertex.GetArrayElementAtIndex(i));
                     gpuProgram.ResolveKeywordName(keywordDictionary);
                     vertInfos.Add(gpuProgram);
+                    // yield
+                    yieldChk.SetVertexIdx(i);
+                    if (yieldChk.ShouldYield())
+                    {
+                        yield return null;
+                    }
                 }
-                for (int i = 0; i < progFragment.arraySize; ++i)
+                yieldChk.SetFragmentNum(fragNum);
+                for (int i = 0; i < fragNum; ++i)
                 {
                     var gpuProgram = new GpuProgramInfo(progFragment.GetArrayElementAtIndex(i));
                     gpuProgram.ResolveKeywordName(keywordDictionary);
                     fragmentInfos.Add(gpuProgram);
+                    // yield
+                    yieldChk.SetFragmentIdx(i);
+                    if (yieldChk.ShouldYield())
+                    {
+                        yield return null;
+                    }
+
                 }
                 yield return null;
             }
@@ -208,10 +224,12 @@ namespace UTJ
 
             private SerializedProperty serializedProperty;
             private IEnumerator execute;
+            private DumpYieldCheck yieldChk;
 
-            public SubShaderInfo(SerializedProperty prop)
+            public SubShaderInfo(SerializedProperty prop, DumpYieldCheck yieldCheck)
             {
                 this.serializedProperty = prop;
+                this.yieldChk = yieldCheck;
                 this.execute = Execute();
             }
             public bool MoveNext()
@@ -221,13 +239,22 @@ namespace UTJ
 
             private IEnumerator Execute() { 
                 var passesProp = serializedProperty.FindPropertyRelative("m_Passes");
-                passes = new List<PassInfo>(passesProp.arraySize);
+                int passCnt = passesProp.arraySize;
+                passes = new List<PassInfo>(passCnt);
+                this.yieldChk.SetPassCount(passCnt);
                 for (int i = 0; i < passesProp.arraySize; ++i)
                 {
                     var currentPassProp = passesProp.GetArrayElementAtIndex(i);
-                    var passInfo = new PassInfo(currentPassProp);
-                    while (passInfo.MoveNext()) { }
+                    var passInfo = new PassInfo(currentPassProp,yieldChk);
+                    while (passInfo.MoveNext()) {
+                        yield return null;
+                    }
                     passes.Add(passInfo);
+                    // yield
+                    yieldChk.SetPassIdx(i);
+                    if (yieldChk.ShouldYield()){
+                        yield return null;
+                    }
                 }
                 yield return null;
 
@@ -302,6 +329,8 @@ namespace UTJ
         private IEnumerator executeProgress;
         public bool IsComplete { get; set; } = false;
 
+        private DumpYieldCheck yieldChk = new DumpYieldCheck();
+
         public ShaderDumpInfo(Shader sh)
         {
             this.serializedObject = new SerializedObject(sh);
@@ -312,6 +341,11 @@ namespace UTJ
         public bool MoveNext()
         {
             return executeProgress.MoveNext();
+        }
+
+        public void SetYieldCheckTime()
+        {
+            this.yieldChk.SetYieldCheckTime();
         }
 
         private IEnumerator Execute() { 
@@ -325,7 +359,6 @@ namespace UTJ
             //fallback
             SerializedProperty fallbackProp = serializedObject.FindProperty("m_ParsedForm.m_FallbackName");
             this.fallback = fallbackProp.stringValue;
-            yield return null;
 
             // props
             SerializedProperty propsproperty = serializedObject.FindProperty( "m_ParsedForm.m_PropInfo.m_Props");
@@ -339,13 +372,25 @@ namespace UTJ
             yield return null;
             // subShaders
             SerializedProperty subShadersProp = serializedObject.FindProperty("m_ParsedForm.m_SubShaders");
-            subShaderInfos = new List<SubShaderInfo>(subShadersProp.arraySize);
+            int subShaderNum = subShadersProp.arraySize;
+            subShaderInfos = new List<SubShaderInfo>(subShaderNum);
+            yieldChk.SetSubshaderCount(subShaderNum);
+
             for (int i = 0; i < subShadersProp.arraySize; ++i)
             {
                 var currentSubShaderProp = subShadersProp.GetArrayElementAtIndex(i);
-                var info = new SubShaderInfo(currentSubShaderProp);
-                while (info.MoveNext()) { }
+                var info = new SubShaderInfo(currentSubShaderProp,yieldChk);
+                while (info.MoveNext()) {
+                    yield return null;
+                }
                 this.subShaderInfos.Add(info);
+                // yield chk
+                yieldChk.SetSubShaderIdx(i);
+                if (yieldChk.ShouldYield())
+                {
+                    yield return null;
+                }
+
             }
             this.IsComplete = true;
         }
