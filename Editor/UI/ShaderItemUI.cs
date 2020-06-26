@@ -2,8 +2,13 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEditor.UIElements;
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#else
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#endif
 using System.IO;
 
 namespace UTJ
@@ -24,7 +29,11 @@ namespace UTJ
             this.shader = sh;
             this.dateTimeStr = date;
             var shaderData = ShaderUtil.GetShaderData(sh);
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             element = treeAsset.CloneTree();
+#else
+            element = treeAsset.CloneTree(null);
+#endif
 
             element.Q<Foldout>("ShaderFold").text = sh.name;
             element.Q<Foldout>("ShaderFold").value = false;
@@ -137,7 +146,12 @@ namespace UTJ
             var keywords = shaderDumpInfo.CollectKeywords();
             var keywordFold = new Foldout();
             keywordFold.text = "Keywords(" + keywords.Count + ")";
+
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             keywordFold.style.left = 20;
+#else
+            keywordFold.style.positionLeft = 20;
+#endif
             keywordFold.value = false;
             foreach (var keyword in keywords)
             {

@@ -2,9 +2,15 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+
+
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using UnityEditor.VersionControl;
+#else
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#endif
 
 namespace UTJ
 {
@@ -27,7 +33,11 @@ namespace UTJ
             this.assetBundle =AssetBundle.LoadFromFile(abFilePath);
             if(this.assetBundle == null) { return; }
             this.serializedObject = new SerializedObject(this.assetBundle);
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             this.element = tree.CloneTree();
+#else
+            this.element = tree.CloneTree(null);
+#endif
             this.onDeleteAsset = onDelete;
             if (!IsStreamSceneAsset(this.serializedObject))
             {
@@ -63,7 +73,12 @@ namespace UTJ
             var loadObjectBody = this.element.Q<VisualElement>("LoadObjectBody");
             foreach( var abObject in assetBundleObjects)
             {
+
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
                 var field = new ObjectField(abObject.name);
+#else
+                var field = new ObjectField();
+#endif
                 field.allowSceneObjects = true;
                 loadObjectBody.Add(field);
                 field.objectType = abObject.GetType();

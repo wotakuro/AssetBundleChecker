@@ -1,8 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+#else
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#endif
 
 namespace UTJ
 {
@@ -19,7 +24,9 @@ namespace UTJ
         internal void AddToParent(VisualElement parent)
         {
             VisualElement element = new VisualElement();
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             element.style.flexDirection = FlexDirection.Row;
+#endif
 
             Label label = new Label(instanciateGameObject.gameObject.name);
             flipShaderButton = new Button();

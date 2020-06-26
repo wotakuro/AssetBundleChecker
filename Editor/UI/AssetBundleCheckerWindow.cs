@@ -2,9 +2,14 @@
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.UIElements;
 using UnityEditor;
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
+using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+#else
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#endif
 using System.Runtime.Remoting.Messaging;
 using System.Linq.Expressions;
 
@@ -39,7 +44,12 @@ namespace UTJ
 
         private void OnEnable()
         {
+
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             string windowLayoutPath = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/AssetBundleChecker.uxml";
+#else
+            string windowLayoutPath = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML2018/AssetBundleChecker.uxml";
+#endif
             var now = System.DateTime.Now;
             openDateStr = now.ToString("yyyyMMdd_tthhmmss");
 
@@ -140,23 +150,38 @@ namespace UTJ
 
         private void InitAssetBundleItems()
         {
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             string assetBuntleItemFile = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/AssetBundleFileItem.uxml";
+#else
+            string assetBuntleItemFile = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML2018/AssetBundleFileItem.uxml";
+#endif
             this.assetBundleTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetBuntleItemFile);
 
             this.assetBunleItemBody = new ScrollView();
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             assetBunleItemBody.style.overflow = Overflow.Hidden;
+#endif
         }
         private void InitShaderItems()
         {
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             string shaderItem = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/ShaderItem.uxml";
+#else
+            string shaderItem = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML2018/ShaderItem.uxml";
+#endif
             this.shaderItemBody = new ScrollView();
+
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             shaderItemBody.style.overflow = Overflow.Hidden;
+#endif
             this.shaderTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(shaderItem);
         }
         private void InitShaderVariants()
         {
             this.shaderVariantsItemBody = new ScrollView();
+#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             shaderVariantsItemBody.style.overflow = Overflow.Hidden;
+#endif
         }
 
         private void SelectAssetBundleFile()
@@ -289,5 +314,15 @@ namespace UTJ
                 del.Dispose();
             }
         }
+
+#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
+        private VisualElement rootVisualElement
+        {
+            get
+            {
+                return this.GetRootVisualContainer();
+            }
+        }
+#endif
     }
 }
