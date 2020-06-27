@@ -1,0 +1,25 @@
+<ui:UXML xmlns:ui="UnityEngine.Experimental.UIElements" xmlns:uie="UnityEditor.Experimental.UIElements">
+    <ui:VisualElement style="flex-shrink: 0;
+ margin-bottom: 10px;">
+        <ui:Label text="AssetBundleLoad" />
+        <ui:VisualElement style="margin-top: 5px;">
+            <ui:Toggle label="AutoLoadDependencies" name="AutoLoadDependencies" />
+        </ui:VisualElement>
+        <ui:VisualElement style="flex-direction: row;
+ flex-shrink: 0;
+ padding-bottom: 5px;">
+            <ui:Button text="Load Asset Bundle" name="LoadAssetBundle" style="width: 140px;
+ margin-right: 10px;" />
+            <ui:Button text="DumpAllShader" name="DumpAllShader" style="width: 100px;" />
+            <ui:Button text="UnloadAll" name="UnloadAll" style="width: 100px;
+ margin-left: 40px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <uie:Toolbar name="Header" style="flex-direction: row;
+ flex-shrink: 0;">
+        <uie:ToolbarButton text="Assets" name="Assets" />
+        <uie:ToolbarButton text="Shaders" name="Shaders" />
+        <uie:ToolbarButton text="ShaderVariants" name="ShaderVariants" />
+    </uie:Toolbar>
+    <ui:VisualElement name="BodyItems" style="overflow: hidden;" />
+</ui:UXML>

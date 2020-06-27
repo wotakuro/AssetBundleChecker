@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.Experimental.UIElements" xmlns:uie="UnityEditor.Experimental.UIElements">
+    <ui:Foldout text="[AssetBundleName]" name="AssetBundleItem" style="overflow: visible;
+ flex-direction: column;
+ flex-wrap: nowrap;
+ flex-shrink: 0;">
+        <ui:VisualElement name="Item">
+            <ui:Label text="Load Objects" name="LoadObjecgts" />
+            <ui:VisualElement name="LoadObjectBody" style="left: 10px;" />
+            <ui:Label text="MaterialChange" name="MaterialChange" />
+            <ui:VisualElement name="MaterialChangeBody" style="left: 10px;" />
+            <ui:Foldout text="Advanced" name="Advanced" style="left: 10px;" />
+        </ui:VisualElement>
+    </ui:Foldout>
+    <ui:Button text="x" name="CloseBtn" style="display: flex;
+ visibility: visible;
+ overflow: visible;
+ position: absolute;
+ top: 0;
+ right: 7px;
+ width: 22px;" />
+</ui:UXML>
