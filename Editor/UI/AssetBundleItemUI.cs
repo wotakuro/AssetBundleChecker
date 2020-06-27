@@ -70,10 +70,14 @@ namespace UTJ
                 this.element.Q<Foldout>("AssetBundleItem").text = this.assetBundle.name;
             }
             this.element.Q<Foldout>("AssetBundleItem").value = false;
+
+#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
+            this.element.Q<Foldout>("AssetBundleItem").style.minWidth = 400;
+#endif
+
             var loadObjectBody = this.element.Q<VisualElement>("LoadObjectBody");
             foreach( var abObject in assetBundleObjects)
             {
-
 #if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
                 var field = new ObjectField(abObject.name);
 #else
@@ -105,6 +109,9 @@ namespace UTJ
             advancedFold.Add(advancedBody);
 
             // Close Btn
+
+#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
+#endif
             this.element.Q<Button>("CloseBtn").clickable.clicked += OnClickClose;
         }
 

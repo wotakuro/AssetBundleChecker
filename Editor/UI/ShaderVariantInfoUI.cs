@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using System.IO;
 
 #if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
 using UnityEngine.UIElements;
@@ -24,10 +25,32 @@ namespace UTJ
         private VisualElement element;
         private List<Shader> shaders = new List<Shader>();
         private Dictionary<Shader, ShaderVariants> shaderVariants = new Dictionary<Shader, ShaderVariants>();
+        private DumpInfo dumpInfo;
+        private string dateStr;
 
-        public ShaderVariantInfoUI( ShaderVariantCollection collection)
+
+        [System.Serializable]
+        private class DumpShaderInfo
+        {
+            [SerializeField]
+            public string shaderName;
+            [SerializeField]
+            public List<string> keywords;
+        }
+
+        [System.Serializable]
+        private class DumpInfo
+        {
+            [SerializeField]
+            public string collectionName;
+            [SerializeField]
+            public List<DumpShaderInfo> shaderInfos;
+        }
+
+        public ShaderVariantInfoUI( ShaderVariantCollection collection,string date)
         {
             this.variantCollection = collection;
+            this.dateStr = date;
 
             ConstructShaderList();
             this.InitUI();
@@ -88,6 +111,14 @@ namespace UTJ
                 }
                 mainFold.Add(shaderFold);
             }
+            var dumpButton = new Button();
+            dumpButton.text = "Dump To Json";
+            dumpButton.clickable.clicked += () =>
+            {
+                this.DumpToJson();
+                dumpButton.parent.Remove(dumpButton);
+            };
+            mainFold.Add(dumpButton);
 
             this.element = new VisualElement();
             this.element.Add(mainFold);
@@ -124,6 +155,38 @@ namespace UTJ
             this.element.parent.Remove(this.element);
         }
 
+        public void DumpToJson()
+        {
+            if(dumpInfo != null)
+            {
+                return;
+            }
+            dumpInfo = new DumpInfo();
+            dumpInfo.collectionName = this.variantCollection.name;
+            dumpInfo.shaderInfos = new List<DumpShaderInfo>();
+
+            foreach( var shader in this.shaders)
+            {
+                ShaderVariants variants;
+                DumpShaderInfo shaderInfo = new DumpShaderInfo();
+                shaderInfo.shaderName = shader.name;
+                if ( shaderVariants.TryGetValue(shader , out variants) ){
+                    shaderInfo.keywords = new List<string>(variants.keywordNames);
+                    shaderInfo.keywords.Sort();
+                }
+                this.dumpInfo.shaderInfos.Add(shaderInfo);
+            }
+
+            string str = JsonUtility.ToJson(this.dumpInfo);
+            string dir = ShaderItemUI.SaveDIR + '/' + this.dateStr + "/variants" ;
+
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            string jsonFile = Path.Combine(dir, this.variantCollection.name + ".json");
+            File.WriteAllText(jsonFile, str);
+        }
 
     }
 }

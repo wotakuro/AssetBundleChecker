@@ -51,13 +51,16 @@ namespace UTJ
             string windowLayoutPath = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML2018/AssetBundleChecker.uxml";
 #endif
             var now = System.DateTime.Now;
-            openDateStr = now.ToString("yyyyMMdd_tthhmmss");
+            openDateStr = now.ToString("yyyyMMdd_HHmmss");
 
             var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(windowLayoutPath);
             var visualElement = CloneTree(tree);
             this.rootVisualElement.Add(visualElement);
 
 
+#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
+            this.lastHeight = -1.0f;
+#endif
 
             this.InitHeader();
 
@@ -82,13 +85,16 @@ namespace UTJ
 
         private void Update()
         {
-            if(dumpExecute != null)
+            if (dumpExecute != null)
             {
-                if( !dumpExecute.MoveNext())
+                if (!dumpExecute.MoveNext())
                 {
                     dumpExecute = null;
                 }
             }
+#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
+            this.SetupScrollViewHeight();
+#endif
         }
 
         private void InitHeader()
@@ -130,7 +136,7 @@ namespace UTJ
             SetVisibility(shaderVariantsItemBody, true);
         }
 
-        private void SetVisibility(ScrollView itemBody,bool flag)
+        private void SetVisibility(ScrollView itemBody, bool flag)
         {
             if (flag)
             {
@@ -205,9 +211,10 @@ namespace UTJ
             }
         }
 
-        private void LoadAssetBundle(string file) { 
-            var assetBundleItem = new AssetBundleItemUI(file, this.assetBundleTreeAsset,this.OnDeleteAssetBundleItem);
-            if( !assetBundleItem.Validate()) { return; }
+        private void LoadAssetBundle(string file)
+        {
+            var assetBundleItem = new AssetBundleItemUI(file, this.assetBundleTreeAsset, this.OnDeleteAssetBundleItem);
+            if (!assetBundleItem.Validate()) { return; }
             assetBundleItem.AddToElement(this.assetBunleItemBody);
             loadAbItemUIs.Add(assetBundleItem);
 
@@ -215,9 +222,9 @@ namespace UTJ
             List<Shader> shaders = new List<Shader>();
             assetBundleItem.CollectAbObjectToList(shaders);
             List<ShaderItemUI> shaderItems = new List<ShaderItemUI>();
-            foreach( var shader in shaders)
+            foreach (var shader in shaders)
             {
-                var shaderItem = new ShaderItemUI(shader, shaderTreeAsset,this.openDateStr);
+                var shaderItem = new ShaderItemUI(shader, shaderTreeAsset, this.openDateStr);
                 shaderItem.AddToElement(this.shaderItemBody);
                 shaderItems.Add(shaderItem);
             }
@@ -228,7 +235,7 @@ namespace UTJ
             List<ShaderVariantInfoUI> variantItems = new List<ShaderVariantInfoUI>();
             foreach (var variantCollection in variantCollections)
             {
-                var variantItem = new ShaderVariantInfoUI(variantCollection);
+                var variantItem = new ShaderVariantInfoUI(variantCollection,this.openDateStr);
                 variantItem.AddToElement(this.shaderVariantsItemBody);
                 variantItems.Add(variantItem);
             }
@@ -238,16 +245,16 @@ namespace UTJ
 
         private void OnDeleteAssetBundleItem(AssetBundleItemUI item)
         {
-            if(loadAbItemUIs != null)
+            if (loadAbItemUIs != null)
             {
                 loadAbItemUIs.Remove(item);
             }
             if (loadShaderItems != null)
             {
                 List<ShaderItemUI> shaderItems;
-                if(loadShaderItems.TryGetValue(item,out shaderItems))
+                if (loadShaderItems.TryGetValue(item, out shaderItems))
                 {
-                    foreach( var shaderItem in shaderItems)
+                    foreach (var shaderItem in shaderItems)
                     {
                         shaderItem.Remove();
                     }
@@ -286,29 +293,44 @@ namespace UTJ
 
         private IEnumerator ExecuteDumpAll()
         {
-            List<ShaderItemUI> allItem = new List<ShaderItemUI>();
-            foreach(var items in this.loadShaderItems.Values)
+            var variantItems = new List<ShaderVariantInfoUI>();
+            var allItem = new List<ShaderItemUI>();
+            foreach (var items in this.loadShaderItems.Values)
             {
                 if (items != null)
                 {
                     allItem.AddRange(items);
                 }
             }
+            foreach (var items in this.loadVariantItems.Values)
+            {
+                if (items != null)
+                {
+                    variantItems.AddRange(items);
+                }
+            }
             yield return null;
 
-            foreach( var item in allItem)
+            foreach (var item in allItem)
             {
                 item.DumpStart();
-                while (!item.IsDumpComplete() ) {
+                while (!item.IsDumpComplete())
+                {
                     yield return null;
                 }
             }
+            foreach (var item in variantItems)
+            {
+                item.DumpToJson();
+                yield return null;
+            }
         }
 
+            
         private void UnloadAll()
         {
             var delList = new List<AssetBundleItemUI>(this.loadAbItemUIs);
-            foreach( var del in delList)
+            foreach (var del in delList)
             {
                 del.RemoveFormParent();
                 del.Dispose();
@@ -322,6 +344,25 @@ namespace UTJ
             {
                 return this.GetRootVisualContainer();
             }
+        }
+        private float lastHeight = -1.0f;
+        private float lastWidth = -1.0f;
+        private void SetupScrollViewHeight()
+        {
+            if (lastHeight == this.position.height && lastWidth == this.position.width)
+            {
+                return;
+            }
+            this.assetBunleItemBody.style.width = this.position.width;
+            this.shaderItemBody.style.width = this.position.width;
+            this.shaderVariantsItemBody.style.width = this.position.width;
+
+            this.assetBunleItemBody.style.height = this.position.height - 100;
+            this.shaderItemBody.style.height = this.position.height - 100;
+            this.shaderVariantsItemBody.style.height = this.position.height - 100;
+
+            lastHeight = this.position.height;
+            lastWidth = this.position.width;
         }
 #endif
     }

@@ -22,7 +22,7 @@ namespace UTJ
         private Shader shader;
         private string dateTimeStr;
 
-        private const string SaveDIR = "ShaderVariants/AssetBundles";
+        internal static readonly string SaveDIR = "ShaderVariants/AssetBundles";
 
         public ShaderItemUI (Shader sh,VisualTreeAsset treeAsset,string date)
         {
