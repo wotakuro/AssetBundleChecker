@@ -8,11 +8,13 @@
 
 # 使用方法
 ## 呼び出しについて
-「Tools/UTJ/AssetBundleChecker」で下記ウィンドウを出します。<br />
+「Tools/UTJ/AssetBundleCheck」で下記ウィンドウを出します。<br />
 ![Alt text](/Documentation~/AssetBundleChecker.png) <br />
 1.アセットバンドルのファイルを指定して読み込むボタンです。<br />
 　読み込んだ時にPrefabがあればInstanciateしてSceneViewに出します<br />
-2.読み込んだアセットバンドルをクリアします<br />
+2.ShaderのキーワードをDumpして「ShaderVariants/AssetBundles」と言うフォルダを生成してJsonに書き出します
+3.読み込んだアセットバンドルをクリアします<br />
+
 <br />
 <br />
 ## AssetBundleに含まれるものを確認する
