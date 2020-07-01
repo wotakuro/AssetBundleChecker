@@ -18,6 +18,8 @@ namespace UTJ
             [SerializeField]
             public List<int> keywordIndecies;
             [SerializeField]
+            public List<int> localKeywordIndecies;
+            [SerializeField]
             public List<string> keywords;
 
             [NonSerialized]
@@ -40,6 +42,15 @@ namespace UTJ
                     int keywordIndex = keywords.GetArrayElementAtIndex(i).intValue;
                     keywordIndecies.Add(keywordIndex);
                 }
+                var localKeywords = serializedProperty.FindPropertyRelative("m_LocalKeywordIndices");
+                if (localKeywords != null) {
+                    localKeywordIndecies = new List<int>();
+                    for (int i = 0; i < localKeywords.arraySize; ++i)
+                    {
+                        int keywordIndex = localKeywords.GetArrayElementAtIndex(i).intValue;
+                        localKeywordIndecies.Add(keywordIndex);
+                    }
+                }
             }
             public void ResolveKeywordName(Dictionary<int, string> dictionary)
             {
@@ -51,6 +62,18 @@ namespace UTJ
                     if (dictionary.TryGetValue(index, out val))
                     {
                         keywords.Add(val);
+                    }
+                }
+                if (localKeywordIndecies != null)
+                {
+                    for (int i = 0; i < this.localKeywordIndecies.Count; ++i)
+                    {
+                        int index = localKeywordIndecies[i];
+                        string val = null;
+                        if (dictionary.TryGetValue(index, out val))
+                        {
+                            keywords.Add(val);
+                        }
                     }
                 }
 
@@ -127,6 +150,20 @@ namespace UTJ
         }
 
         [Serializable]
+        public class KeywordDictionaryInfo
+        {
+            [SerializeField]
+            public int idx;
+            [SerializeField]
+            public string keyword;
+            public KeywordDictionaryInfo(int index,string key)
+            {
+                this.idx = index;
+                this.keyword = key;
+            }
+        }
+
+        [Serializable]
         public class PassInfo
         {
             [SerializeField]
@@ -139,6 +176,9 @@ namespace UTJ
 
             [SerializeField]
             public List<ShaderTagInfo> tags;
+            [SerializeField]
+            public List<KeywordDictionaryInfo> keywordInfos;
+
             [SerializeField]
             public List<GpuProgramInfo> vertInfos;
             [SerializeField]
@@ -229,19 +269,22 @@ namespace UTJ
 
             private void SetupKeywordDictionary (SerializedProperty serializedProperty)
             {
-                keywordDictionary = new Dictionary<int, string>();
                 var nameIndices = serializedProperty.FindPropertyRelative("m_NameIndices");
-
-                for (int k = 0; k < nameIndices.arraySize; ++k)
+                int nameSize = nameIndices.arraySize;
+                this.keywordDictionary = new Dictionary<int, string>(nameSize);
+                this.keywordInfos = new List<KeywordDictionaryInfo>(nameSize);
+                for (int k = 0; k < nameSize; ++k)
                 {
                     var currentNameIndecies = nameIndices.GetArrayElementAtIndex(k).FindPropertyRelative("first");
                     var nameIndex = nameIndices.GetArrayElementAtIndex(k).FindPropertyRelative("second");
 
-//                    Debug.Log(currentNameIndecies.stringValue + "::" + nameIndex.intValue);
 
                     if (!keywordDictionary.ContainsKey(nameIndex.intValue))
                     {
-                        keywordDictionary.Add(nameIndex.intValue, currentNameIndecies.stringValue);
+                        int idxVal = nameIndex.intValue;
+                        string strVal = currentNameIndecies.stringValue;
+                        keywordDictionary.Add(idxVal, strVal);
+                        keywordInfos.Add(new KeywordDictionaryInfo(idxVal, strVal));
                     }
                 }
 
