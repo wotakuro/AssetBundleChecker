@@ -16,8 +16,9 @@ namespace UTJ
 {
     public class AssetBundleItemUI:System.IDisposable
     {
-        public delegate void OnDeleteAsset(AssetBundleItemUI itemUi); 
+        public delegate void OnDeleteAsset(AssetBundleItemUI itemUi);
 
+        private string assetBundleFilePath;
         private AssetBundle assetBundle;
         private VisualElement element;
         private List<UnityEngine.Object> assetBundleObjects;
@@ -28,8 +29,11 @@ namespace UTJ
         private SerializedObject serializedObject;
         private OnDeleteAsset onDeleteAsset;
 
+        public string AssetBundleFilePath { get { return assetBundleFilePath; } }
+
         public AssetBundleItemUI(string abFilePath, VisualTreeAsset tree, OnDeleteAsset onDelete)
         {
+            this.assetBundleFilePath = abFilePath;
             this.assetBundle =AssetBundle.LoadFromFile(abFilePath);
             if(this.assetBundle == null) { return; }
             this.serializedObject = new SerializedObject(this.assetBundle);
@@ -67,8 +71,10 @@ namespace UTJ
         {
             if (!string.IsNullOrEmpty(this.assetBundle.name))
             {
-                this.element.Q<Foldout>("AssetBundleItem").text = this.assetBundle.name;
+                this.element.Q<Label>("AssetBundleName").text = "Name:"+this.assetBundle.name;
             }
+            this.element.Q<Foldout>("AssetBundleItem").text = System.IO.Path.GetFileName( assetBundleFilePath );
+            
             this.element.Q<Foldout>("AssetBundleItem").value = false;
 
 #if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER

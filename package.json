@@ -1,8 +1,8 @@
 {
   "name": "com.utj.assetbundlechecker",
   "displayName": "AssetBundle Checker",
-  "version": "0.8.1",
-  "unity": "2018.3",
+  "version": "1.0.0",
+  "unity": "2019.4",
   "description": "Configuration",
   "keywords": [
     "Config"

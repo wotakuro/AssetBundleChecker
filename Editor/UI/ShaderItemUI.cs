@@ -24,7 +24,7 @@ namespace UTJ
 
         internal static readonly string SaveDIR = "ShaderVariants/AssetBundles";
 
-        public ShaderItemUI (Shader sh,VisualTreeAsset treeAsset,string date)
+        public ShaderItemUI (Shader sh,string abFilePath,VisualTreeAsset treeAsset,string date)
         {
             this.shader = sh;
             this.dateTimeStr = date;
@@ -34,6 +34,7 @@ namespace UTJ
 #else
             element = treeAsset.CloneTree(null);
 #endif
+            element.Q<Label>("AssetBundlePath").text = System.IO.Path.GetFileName(abFilePath);
 
             element.Q<Foldout>("ShaderFold").text = sh.name;
             element.Q<Foldout>("ShaderFold").value = false;

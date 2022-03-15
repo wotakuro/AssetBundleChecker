@@ -35,21 +35,19 @@ namespace UTJ
         private ScrollView assetBunleItemBody;
         private ScrollView shaderItemBody;
         private ScrollView shaderVariantsItemBody;
+
         private string openDateStr;
 
         private Button loadAbButton;
         private Toggle isResolveDepencies;
-        private IEnumerator dumpExecute;
+        private Button loadCatalogBtn;
 
+        private IEnumerator dumpExecute;
 
         private void OnEnable()
         {
 
-#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             string windowLayoutPath = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/AssetBundleChecker.uxml";
-#else
-            string windowLayoutPath = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML2018/AssetBundleChecker.uxml";
-#endif
             var now = System.DateTime.Now;
             openDateStr = now.ToString("yyyyMMdd_HHmmss");
 
@@ -58,9 +56,6 @@ namespace UTJ
             this.rootVisualElement.Add(visualElement);
 
 
-#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
-            this.lastHeight = -1.0f;
-#endif
 
             this.InitHeader();
 
@@ -92,9 +87,6 @@ namespace UTJ
                     dumpExecute = null;
                 }
             }
-#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
-            this.SetupScrollViewHeight();
-#endif
         }
 
         private void InitHeader()
@@ -116,6 +108,19 @@ namespace UTJ
             headerToolbar.Q<ToolbarButton>("Assets").clickable.clicked += SetAssetFileMode;
             headerToolbar.Q<ToolbarButton>("Shaders").clickable.clicked += SetShaderMode;
             headerToolbar.Q<ToolbarButton>("ShaderVariants").clickable.clicked += SetShaderVariantMode;
+
+
+            this.loadCatalogBtn = this.rootVisualElement.Q<Button>("LoadCatalogBtn");
+            //
+
+            // 
+
+#if CHECKER_WITH_ADDRESSABLES
+
+            loadCatalogBtn.clickable.clicked += LoadCatalog;
+#else
+            this.loadCatalogBtn.parent.Remove(this.loadCatalogBtn);
+#endif
         }
         private void SetAssetFileMode()
         {
@@ -135,9 +140,16 @@ namespace UTJ
             SetVisibility(shaderItemBody, false);
             SetVisibility(shaderVariantsItemBody, true);
         }
-
-        private void SetVisibility(ScrollView itemBody, bool flag)
+        private void SeAddressableCatalogMode()
         {
+            SetVisibility(assetBunleItemBody, false);
+            SetVisibility(shaderItemBody, false);
+            SetVisibility(shaderVariantsItemBody, false);
+        }
+
+        private void SetVisibility(VisualElement itemBody, bool flag)
+        {
+            if(itemBody == null) { return; }
             if (flag)
             {
                 if (!bodyElement.Contains(itemBody))
@@ -156,41 +168,27 @@ namespace UTJ
 
         private void InitAssetBundleItems()
         {
-#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             string assetBuntleItemFile = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/AssetBundleFileItem.uxml";
-#else
-            string assetBuntleItemFile = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML2018/AssetBundleFileItem.uxml";
-#endif
             this.assetBundleTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetBuntleItemFile);
 
             this.assetBunleItemBody = new ScrollView();
-#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             assetBunleItemBody.style.overflow = Overflow.Hidden;
-#endif
         }
         private void InitShaderItems()
         {
-#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             string shaderItem = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML/ShaderItem.uxml";
-#else
-            string shaderItem = "Packages/com.utj.assetbundlechecker/Editor/UI/UXML2018/ShaderItem.uxml";
-#endif
             this.shaderItemBody = new ScrollView();
 
-#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             shaderItemBody.style.overflow = Overflow.Hidden;
-#endif
             this.shaderTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(shaderItem);
         }
         private void InitShaderVariants()
         {
             this.shaderVariantsItemBody = new ScrollView();
-#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             shaderVariantsItemBody.style.overflow = Overflow.Hidden;
-#endif
         }
 
-        private void SelectAssetBundleFile()
+            private void SelectAssetBundleFile()
         {
             var file = EditorUtility.OpenFilePanel("Select AssetBundle", "", "");
             if (string.IsNullOrEmpty(file)) { return; }
@@ -198,8 +196,7 @@ namespace UTJ
 
             if (isResolveDependencies)
             {
-                var fileList = new List<string>();
-                AssetBundleManifestResolver.GetLoadFiles(file, fileList);
+                var fileList = GetDependFiles(file);
                 foreach (var loadFile in fileList)
                 {
                     LoadAssetBundle(loadFile);
@@ -213,6 +210,10 @@ namespace UTJ
 
         private void LoadAssetBundle(string file)
         {
+            if (AlreadyLoadedAssetBundle(file))
+            {
+                return;
+            }
             var assetBundleItem = new AssetBundleItemUI(file, this.assetBundleTreeAsset, this.OnDeleteAssetBundleItem);
             if (!assetBundleItem.Validate()) { return; }
             assetBundleItem.AddToElement(this.assetBunleItemBody);
@@ -224,7 +225,7 @@ namespace UTJ
             List<ShaderItemUI> shaderItems = new List<ShaderItemUI>();
             foreach (var shader in shaders)
             {
-                var shaderItem = new ShaderItemUI(shader, shaderTreeAsset, this.openDateStr);
+                var shaderItem = new ShaderItemUI(shader, assetBundleItem.AssetBundleFilePath, shaderTreeAsset, this.openDateStr);
                 shaderItem.AddToElement(this.shaderItemBody);
                 shaderItems.Add(shaderItem);
             }
@@ -276,11 +277,7 @@ namespace UTJ
         }
         private static VisualElement CloneTree(VisualTreeAsset asset)
         {
-#if UNITY_2019_1_OR_NEWER || UNITY_2019_OR_NEWER
             return asset.CloneTree();
-#else
-            return asset.CloneTree(null);
-#endif
         }
 
         private void DumpAllShader()
@@ -335,35 +332,65 @@ namespace UTJ
                 del.RemoveFormParent();
                 del.Dispose();
             }
+            this.loadAbItemUIs.Clear();
         }
 
-#if !UNITY_2019_1_OR_NEWER && !UNITY_2019_OR_NEWER
-        private VisualElement rootVisualElement
+        private bool AlreadyLoadedAssetBundle(string file)
         {
-            get
+            foreach( var loadAbItem in loadAbItemUIs)
             {
-                return this.GetRootVisualContainer();
+                if(loadAbItem.AssetBundleFilePath == file){
+                    Debug.Log("Already load " + file);
+                    return true;
+                }
             }
+            return false;
         }
-        private float lastHeight = -1.0f;
-        private float lastWidth = -1.0f;
-        private void SetupScrollViewHeight()
+
+        private List<string> GetDependFiles(string file)
         {
-            if (lastHeight == this.position.height && lastWidth == this.position.width)
-            {
-                return;
+#if CHECKER_WITH_ADDRESSABLES
+            var inCatalogResult = GetDependInCatalog(file);
+            if(inCatalogResult != null && inCatalogResult.Count > 1) {
+                return inCatalogResult; 
             }
-            this.assetBunleItemBody.style.width = this.position.width;
-            this.shaderItemBody.style.width = this.position.width;
-            this.shaderVariantsItemBody.style.width = this.position.width;
+#endif
+            var fileList = new List<string>();
+            AssetBundleManifestResolver.GetLoadFiles(file, fileList);
 
-            this.assetBunleItemBody.style.height = this.position.height - 100;
-            this.shaderItemBody.style.height = this.position.height - 100;
-            this.shaderVariantsItemBody.style.height = this.position.height - 100;
+            return fileList;
+        }
 
-            lastHeight = this.position.height;
-            lastWidth = this.position.width;
+        // with Addressables
+#if CHECKER_WITH_ADDRESSABLES
+        private AddressableCatalogInfo catalogInfo;
+
+        private void LoadCatalog()
+        {
+            var file = EditorUtility.OpenFilePanel("Select AssetBundle", "Library/com.unity.addressables/aa", "json");
+            catalogInfo = new AddressableCatalogInfo();
+            catalogInfo.Load(file);
+
+        }
+
+        private List<string> GetDependInCatalog(string file)
+        {
+            if(catalogInfo == null) { return null; }
+            int idx = file.LastIndexOf('/');
+            string fileOnly = file.Substring(idx+1);
+            string dir = file.Substring(0, idx);
+            Debug.Log("fileOnly::" + fileOnly);
+            var dependencies =  catalogInfo.GetDependencies(fileOnly);
+            if(dependencies == null) { return null; }
+            var result = new List<string>( dependencies.Count);
+            foreach(var depend in dependencies)
+            {
+                result.Add(System.IO.Path.Combine(dir, depend));
+            }
+            result.Add(file);
+            return result;
         }
 #endif
+
     }
 }

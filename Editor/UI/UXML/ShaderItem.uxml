@@ -1,6 +1,7 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:Foldout text="Foldout" name="ShaderFold">
         <ui:VisualElement>
+            <ui:Label text="AssetBundlePath" display-tooltip-when-elided="true" name="AssetBundlePath" />
             <uie:ObjectField label="Shader" name="ShaderVal" />
             <ui:Foldout text="SubShaders" name="SubShaders" style="left: 20px;" />
             <ui:Button text="Dump" name="DumpButton" style="width: 100px;" />
