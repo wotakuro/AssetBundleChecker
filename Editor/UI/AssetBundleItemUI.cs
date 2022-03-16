@@ -51,6 +51,14 @@ namespace UTJ
             else
             {
                 this.assetBundleObjects = new List<UnityEngine.Object>();
+                var scenes = this.assetBundle.GetAllScenePaths();
+                foreach(var scene in scenes)
+                {
+                    if (EditorApplication.isPlaying)
+                    {
+                        UnityEngine.SceneManagement.SceneManager.LoadScene(scene,UnityEngine.SceneManagement.LoadSceneMode.Additive);
+                    }
+                }
             }
             this.InitElement();
         }
