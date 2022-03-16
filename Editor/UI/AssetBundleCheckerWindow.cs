@@ -36,11 +36,13 @@ namespace UTJ
         private ScrollView shaderItemBody;
         private ScrollView shaderVariantsItemBody;
 
+
         private string openDateStr;
 
         private Button loadAbButton;
         private Toggle isResolveDepencies;
         private Button loadCatalogBtn;
+        private Label loadedCatalogFile;
 
         private IEnumerator dumpExecute;
 
@@ -111,8 +113,10 @@ namespace UTJ
 
 
             this.loadCatalogBtn = this.rootVisualElement.Q<Button>("LoadCatalogBtn");
+            this.loadedCatalogFile = this.rootVisualElement.Q<Label>("LoadedCatalogFile");
             //
 
+            var catalogArea = this.rootVisualElement.Q<VisualElement>("CatalogSelectArea");
             // 
 
 #if CHECKER_WITH_ADDRESSABLES
@@ -120,6 +124,7 @@ namespace UTJ
             loadCatalogBtn.clickable.clicked += LoadCatalog;
 #else
             this.loadCatalogBtn.parent.Remove(this.loadCatalogBtn);
+            catalogArea.parent.Remove(catalogArea);
 #endif
         }
         private void SetAssetFileMode()
@@ -140,13 +145,6 @@ namespace UTJ
             SetVisibility(shaderItemBody, false);
             SetVisibility(shaderVariantsItemBody, true);
         }
-        private void SeAddressableCatalogMode()
-        {
-            SetVisibility(assetBunleItemBody, false);
-            SetVisibility(shaderItemBody, false);
-            SetVisibility(shaderVariantsItemBody, false);
-        }
-
         private void SetVisibility(VisualElement itemBody, bool flag)
         {
             if(itemBody == null) { return; }
@@ -225,6 +223,10 @@ namespace UTJ
             List<ShaderItemUI> shaderItems = new List<ShaderItemUI>();
             foreach (var shader in shaders)
             {
+                if (IsAlreadyLoadShader(shader))
+                {
+                    continue;
+                }
                 var shaderItem = new ShaderItemUI(shader, assetBundleItem.AssetBundleFilePath, shaderTreeAsset, this.openDateStr);
                 shaderItem.AddToElement(this.shaderItemBody);
                 shaderItems.Add(shaderItem);
@@ -241,6 +243,20 @@ namespace UTJ
                 variantItems.Add(variantItem);
             }
             this.loadVariantItems.Add(assetBundleItem, variantItems);
+        }
+
+        private bool IsAlreadyLoadShader(Shader sh)
+        {
+            foreach(var items in loadShaderItems.Values)
+            {
+                foreach(var item in items)
+                {
+                    if( item.IsSame(sh)){
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
 
@@ -368,6 +384,8 @@ namespace UTJ
         private void LoadCatalog()
         {
             var file = EditorUtility.OpenFilePanel("Select AssetBundle", "Library/com.unity.addressables/aa", "json");
+            var currentDir = System.IO.Directory.GetCurrentDirectory().Replace('\\', '/');
+            this.loadedCatalogFile.text = file.Replace(currentDir, "");
             catalogInfo = new AddressableCatalogInfo();
             catalogInfo.Load(file);
 

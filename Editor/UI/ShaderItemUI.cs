@@ -24,6 +24,11 @@ namespace UTJ
 
         internal static readonly string SaveDIR = "ShaderVariants/AssetBundles";
 
+        public bool IsSame(Shader sh)
+        {
+            return (sh.GetInstanceID() == this.shader.GetInstanceID());
+        }
+
         public ShaderItemUI (Shader sh,string abFilePath,VisualTreeAsset treeAsset,string date)
         {
             this.shader = sh;
