@@ -289,8 +289,8 @@ namespace UTJ
                 for (int tierIndex = 0; tierIndex < fragTierNum; ++tierIndex)
                 {
                     var tierPrograms = progFragment.GetArrayElementAtIndex(tierIndex);
-                    var vertExec = ExecuteGPUPrograms(fragmentInfos, tierIndex, tierPrograms, tierPrograms.arraySize, yieldChk.CompleteFragIdx);
-                    while (vertExec.MoveNext())
+                    var fragExec = ExecuteGPUPrograms(fragmentInfos, tierIndex, tierPrograms, tierPrograms.arraySize, yieldChk.CompleteFragIdx);
+                    while (fragExec.MoveNext())
                     {
                         yield return null;
                     }
@@ -348,7 +348,7 @@ namespace UTJ
 #else
                     gpuProgram.ResolveKeywordName(keywordDictionary);
 #endif
-                    vertInfos.Add(gpuProgram);
+                    programs.Add(gpuProgram);
                     // yield
                     onCompleteIndex(i);
                     if (yieldChk.ShouldYield())
