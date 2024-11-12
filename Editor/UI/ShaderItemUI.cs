@@ -21,6 +21,7 @@ namespace UTJ
         private ShaderDumpInfo shaderDumpInfo;        
         private Shader shader;
         private string dateTimeStr;
+        private bool openDirFlag = false;
 
         internal static readonly string SaveDIR = "ShaderVariants/AssetBundles";
 
@@ -56,6 +57,7 @@ namespace UTJ
             // DumpBtn
             element.Q<Button>("DumpButton").clickable.clicked += () =>
             {
+                openDirFlag = true;
                 DumpStart();
             };
         }
@@ -122,9 +124,14 @@ namespace UTJ
             }
         }
 
+        public static string GetSavedDir(string dtStr)
+        {
+            return SaveDIR + '/' + dtStr;// this.dateTimeStr;
+        }
+
         private void OnDumpComplete()
         {
-            string dir = SaveDIR + '/' + this.dateTimeStr;
+            string dir = GetSavedDir(this.dateTimeStr);
 
             if (!Directory.Exists(dir))
             {
@@ -138,6 +145,11 @@ namespace UTJ
             string jsonString = JsonUtility.ToJson(this.shaderDumpInfo);
             string file = Path.Combine(dir,shader.name.Replace("/", "_") + ".json");
             System.IO.File.WriteAllText(file, jsonString);
+            if (openDirFlag)
+            {
+                EditorUtility.RevealInFinder(dir);
+                openDirFlag = false;
+            }
             EditorApplication.update -= this.Update;
         }
 

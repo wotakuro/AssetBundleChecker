@@ -324,6 +324,8 @@ namespace UTJ
                 item.DumpToJson();
                 yield return null;
             }
+
+            EditorUtility.RevealInFinder(ShaderItemUI.GetSavedDir(this.openDateStr));
         }
 
             
